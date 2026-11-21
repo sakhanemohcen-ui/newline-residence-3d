@@ -370,6 +370,8 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
     const glassMat = (name, lit) => new THREE.MeshPhysicalMaterial({ name, map: tDay, roughness: 0.55, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.25,
       emissive: 0x000000, emissiveMap: lit ? tLit : null, emissiveIntensity: 0 });
     const gV = glassMat('Vitrage', false), gL = glassMat('Vitrage_lit', true);
+    gL.emissive.set(0xffc88a); gL.emissiveIntensity = 0.65;   // some rooms lit warm even by day: the building looks lived in from afar
+    gV.envMapIntensity = gL.envMapIntensity = 1.9;
     const gS = new THREE.MeshPhysicalMaterial({ name: 'Vitrine', map: tShop, roughness: 0.6, clearcoat: 1, clearcoatRoughness: 0.03, emissive: 0xfff1dc, emissiveMap: tShop, emissiveIntensity: 0.28 });
     site.traverse(o => {
       if (!o.isMesh) return; const n = o.material.name;
@@ -388,7 +390,7 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
     if (nightE && !glow.find(g => g[0] === mat)) glow.push([mat, mat.name === 'Signe' ? new THREE.Color(0x000000) : mat.emissive.clone(), mat.name === 'Signe' ? 0 : mat.emissiveIntensity, new THREE.Color(nightE[0]), nightE[1]]);
     if (mat.name === 'Mer') { mat.color.set(0x235a7d); }
     // façade realism: warm plaster bands, deep grey recesses, glass that mirrors the real sky, a calm red sign by day
-    if (mat.name === 'Bandes') { mat.color.set(0xeae3d7); mat.roughness = 0.62; }
+    if (mat.name === 'Bandes') { mat.color.set(0xcfc7b8); mat.roughness = 0.62; }
     if (mat.name === 'Signe') { mat.color.set(0x9e0d22); mat.roughness = 0.35; }
   });
   // ---- baked skylight on the residence and the city around it (lightmaps on the 2nd UV set); the sun stays live for the time of day
