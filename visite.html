@@ -53,6 +53,16 @@ button{font:inherit;border:0;cursor:pointer}
   #map canvas{width:120px}
   #top{max-width:52vw}
 }
+#pct{margin-top:10px;font-size:12px;letter-spacing:.12em;opacity:.7}
+#todPill{display:none;position:fixed;z-index:6;align-items:center;gap:6px;font-weight:700}
+@media (max-width:640px){
+  #tod{display:none}#tod.open{display:block;bottom:calc(136px + env(safe-area-inset-bottom));width:calc(100vw - 24px)}
+  #top{top:calc(var(--brandH, 130px) + 24px);left:12px;right:auto;max-width:none;justify-content:flex-start}
+  #todPill{display:flex;bottom:calc(84px + env(safe-area-inset-bottom));left:12px}
+  .btn{min-height:40px}
+  #tags .tag{font-size:10.5px;padding:5px 8px}
+  
+}
 </style>
 </head>
 <body>
@@ -79,7 +89,8 @@ button{font:inherit;border:0;cursor:pointer}
   <div class="ticks"><span style="left:0">Matin</span><span style="left:40%;transform:translateX(-50%)">Midi</span><span style="left:81%;transform:translateX(-50%)">Coucher</span><span style="right:0">Nuit</span></div></div>
 <div id="hint"></div>
 <div id="err"></div>
-<div id="load"><h2>NEWLINE</h2><p>Chargement de votre appartement</p><div id="bar"><i></i></div></div>
+<div id="load"><h2>NEWLINE</h2><p>Chargement de votre appartement</p><div id="bar"><i></i></div><div id="pct">0 %</div></div>
+<button id="todPill" class="btn" aria-label="Heure">🕑 <span id="todPillT">10:00</span></button>
 
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/+esm';
@@ -283,7 +294,7 @@ fetch(BASE + 'apt.json').then(r => { if (!r.ok) throw new Error('appartement inc
   return Promise.all([
   texLoad(BASE + (LITE ? 'lm_A_2k.jpg' : 'lm_A.jpg')), texLoad(BASE + 'lm_B.jpg'), Promise.resolve(null),
   fetch(BASE + 'solids.json').then(r => r.json()),
-  new Promise((res, rej) => new GLTFLoader().setDRACOLoader(new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/libs/draco/gltf/')).load(BASE + 'model.glb', res, e => { if (e.total) bar.style.width = (100 * e.loaded / e.total) + '%'; }, rej)),
+  new Promise((res, rej) => new GLTFLoader().setDRACOLoader(new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/libs/draco/gltf/')).load(BASE + 'model.glb', res, e => { if (e.total) { bar.style.width = (100 * e.loaded / e.total) + '%'; $('pct').textContent = Math.round(100 * e.loaded / e.total) + ' %'; } }, rej)),
 ]); }).then(([la, lb, lav, solids, gltf]) => {
   LM.A = la; LM.B = lb; LM.Avide = lav; SOLIDS = solids; TOD.nightA.value = la; TOD.nightB.value = lb;   // until the night maps arrive
   texLoad(BASE + 'lm_A_nuit.jpg').then(t => { if (!leaving) { TOD.nightA.value = t; LM.An = t; } }).catch(() => {});
@@ -481,12 +492,16 @@ function applyTime() {
     VIEW.ground.material.color.copy(VIEW.g0).multiplyScalar(1 - 0.92 * n); }
   for (const [name, d0, d1] of [['Voilage', 0.85, 0.12], ['Spot_LED', 2.2, 3.2], ['Ampoule', 3, 4.5]]) { const m = NAMED[name]; if (m) m.emissiveIntensity = mixf(d0, d1, n) * (name === 'Voilage' ? (1 - 0.3 * warm) : 1); }
   const mm = Math.round(h * 60), nm = h < 9.5 ? 'Matin' : h < 16.5 ? 'Journée' : h < 18.3 ? 'Après-midi' : h < 20.2 ? 'Coucher de soleil' : 'Nuit';
+  $('todPillT').textContent = String(mm / 60 | 0).padStart(2, '0') + ':' + String(mm % 60).padStart(2, '0');
   $('todLabel').textContent = String(mm / 60 | 0).padStart(2, '0') + ':' + String(mm % 60).padStart(2, '0') + ' · ' + nm;
 }
 const NAMED = {};
 const setHour = h => { hourTarget = h; $('todRange').value = (h - 7) / 15 * 1000; };
 $('todRange').addEventListener('input', () => { hourTarget = 7 + $('todRange').value / 1000 * 15; });
 $('todRange').addEventListener('change', () => $('todRange').blur());
+{ const fitTop = () => document.documentElement.style.setProperty('--brandH', $('brand').offsetHeight + 'px'); addEventListener('resize', fitTop); setTimeout(fitTop, 0); setTimeout(fitTop, 1500); }
+$('todPill').onclick = () => $('tod').classList.toggle('open');
+document.getElementById('c').addEventListener('pointerdown', () => $('tod').classList.remove('open'));
 try { const q = +new URLSearchParams(location.search).get('h'); if (q >= 7 && q <= 22) { hourCur = q; setHour(q); } } catch (_) {}   // keeps the hour chosen on the residence page
 /* ------------------------------------------------------------ frame */
 const angLerp = (a, b, t) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * t;
