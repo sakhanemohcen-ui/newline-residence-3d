@@ -120,7 +120,7 @@ const MOODS = {     // real photographed skies (Poly Haven, CC0): image-based li
 const DAY = { sky: new THREE.Color(0xbcd4ea), fog: new THREE.Color(0xd6e2ec), hemi: 1.6, sun: 3.0, exp: 1.0 };
 const NIGHT = { sky: new THREE.Color(0x1a2233), fog: new THREE.Color(0x1d2534), hemi: 0.35, sun: 0.15, exp: 1.25 };
 scene.background = DAY.sky.clone(); scene.fog = new THREE.Fog(DAY.fog.clone(), 300, 7000);   // light atmospheric haze: far blocks soften into the sky
-const camera = new THREE.PerspectiveCamera(40, 1, 1, 15000);
+const camera = new THREE.PerspectiveCamera(40, 1, 2, 15000);   // near 2 m: better depth precision for thin ground layers
 const hemi = new THREE.HemisphereLight(0xffffff, 0xb8ad9c, DAY.hemi); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff0dc, DAY.sun); sun.position.set(-120, 220, 160); scene.add(sun, sun.target);
 if (renderer.shadowMap.enabled) { sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); const s = sun.shadow.camera; s.left = -160; s.right = 160; s.top = 160; s.bottom = -160; s.near = 10; s.far = 700; sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.6; }
@@ -211,7 +211,8 @@ Promise.all([fetch('residence/residence.json?v=' + Date.now()).then(r => r.json(
     gm.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   }
   const TEX = {
-    Sol: m => { m.map = tSol; m.color.set(0xbdb595); m.roughness = 1;          // natural ground: large patches of dry grass, bare earth and dust (value noise in world space)
+    Sol: m => { m.map = tSol; m.color.set(0xbdb595); m.roughness = 1; m.polygonOffset = true; m.polygonOffsetFactor = 6; m.polygonOffsetUnits = 6;   // ground always loses to the fields/yards laid a few cm above it (no flicker)
+          // natural ground: large patches of dry grass, bare earth and dust (value noise in world space)
       m.onBeforeCompile = sh => {
         sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>
 varying vec2 vGP;`).replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
