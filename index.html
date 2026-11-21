@@ -367,21 +367,57 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
         const sky = g.createLinearGradient(0, y + WT, 0, y + WB); sky.addColorStop(0, 'rgba(215,230,245,.22)'); sky.addColorStop(1, 'rgba(215,230,245,0)'); g.fillStyle = sky; g.fillRect(x, y + WT, w, h);
       }
       const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; };
-    const shops = () => { const c = document.createElement('canvas'); c.width = 1536; c.height = 256; const g = c.getContext('2d'); let s1 = 17; const r = () => { s1 = (s1 * 16807) % 2147483647; return s1 / 2147483647; };
-      const tones = ['#d9cbb4', '#cfd3d2', '#d8c6b8', '#c9cfc0', '#ddd0b8', '#cbc4c8'];
-      for (let i = 0; i < 6; i++) { const x = i * 256; g.fillStyle = tones[i]; g.fillRect(x, 0, 256, 256);
-        g.fillStyle = 'rgba(255,255,240,.95)'; for (let q = 0; q < 3; q++) g.fillRect(x + 30 + q * 75, 26, 46, 6);                          // ceiling lights
-        for (let sh = 0; sh < 4; sh++) { const yy = 70 + sh * 38; g.fillStyle = 'rgba(120,105,90,.55)'; g.fillRect(x + 10, yy, 236, 4);
-          for (let q = 0; q < 26; q++) { g.fillStyle = `hsl(${(r() * 360) | 0},${15 + r() * 25}%,${38 + r() * 25}%)`; g.fillRect(x + 14 + q * 9, yy - 14 - r() * 8, 7, 14); } }   // products on shelves
-        g.fillStyle = 'rgba(70,55,45,.85)'; g.fillRect(x + 60 + r() * 60, 206, 90, 50);                                                    // counter
-        g.fillStyle = '#c9c2b6'; g.fillRect(x, 236, 256, 20); g.fillStyle = '#2c2f33'; g.fillRect(x, 0, 6, 256); }
+    const shops = () => {                           // 12 panels of 3.5 m = 6 shops of 7 m, each a lit room drawn in perspective (back wall, floor, ceiling) with its own trade
+      const PW = 256, PH = 256, c = document.createElement('canvas'); c.width = PW * 12; c.height = PH; const g = c.getContext('2d'); let s1 = 17; const r = () => { s1 = (s1 * 16807) % 2147483647; return s1 / 2147483647; };
+      const T = [{ w: '#f4f4f2', f: '#d9d6cf', k: 'pharma' }, { w: '#6b4a34', f: '#3e2c22', k: 'cafe' }, { w: '#e8d6b6', f: '#a88660', k: 'pain' }, { w: '#d8dadc', f: '#9da1a6', k: 'optique' }, { w: '#efe7dc', f: '#c9b9a4', k: 'mode' }, { w: '#e6e9ec', f: '#8e959c', k: 'agence' }];
+      for (let sp = 0; sp < 6; sp++) { const t = T[sp], x0 = sp * 2 * PW, W = 2 * PW;
+        g.fillStyle = t.w; g.fillRect(x0, 0, W, PH);                                                                    // side walls
+        const bx = x0 + 70, bw = W - 140, by = 46, bh = 150;
+        g.fillStyle = t.f; g.beginPath(); g.moveTo(x0, PH); g.lineTo(bx, by + bh); g.lineTo(bx + bw, by + bh); g.lineTo(x0 + W, PH); g.fill();   // floor in perspective
+        g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.moveTo(x0, 0); g.lineTo(bx, by); g.lineTo(bx + bw, by); g.lineTo(x0 + W, 0); g.fill();       // ceiling
+        g.fillStyle = 'rgba(0,0,0,.10)'; g.fillRect(x0, 0, 70, PH); g.fillRect(x0 + W - 70, 0, 70, PH);
+        g.fillStyle = t.w; g.fillRect(bx, by, bw, bh); g.fillStyle = 'rgba(0,0,0,.06)'; g.fillRect(bx, by, bw, bh);       // back wall
+        for (let q = 0; q < 4; q++) { g.fillStyle = 'rgba(255,250,235,.95)'; g.fillRect(x0 + 60 + q * (W - 120) / 3 - 18, 14 + q % 2 * 4, 36, 5); }   // ceiling lights
+        if (t.k === 'pharma') { for (let sh = 0; sh < 4; sh++) { g.fillStyle = 'rgba(150,150,150,.6)'; g.fillRect(bx + 6, by + 30 + sh * 28, bw - 12, 3);
+            for (let q = 0; q < 34; q++) { g.fillStyle = r() < 0.5 ? '#ffffff' : ['#3aa35a', '#4a8fd0', '#e0e0e0'][(r() * 3) | 0]; g.fillRect(bx + 10 + q * 10, by + 18 + sh * 28, 7, 12); } }
+          g.fillStyle = '#18a54b'; const cx = bx + bw / 2, cy = by + 14; g.fillRect(cx - 14, cy - 5, 28, 10); g.fillRect(cx - 5, cy - 14, 10, 28);
+          g.fillStyle = '#ffffff'; g.fillRect(bx + 40, by + bh - 34, bw - 80, 34); }
+        if (t.k === 'cafe') { g.fillStyle = '#2a1d16'; g.fillRect(bx + 10, by + bh - 50, bw * 0.55, 50); g.fillStyle = '#c0c4c8'; g.fillRect(bx + 30, by + bh - 74, 40, 24);   // counter + coffee machine
+          g.fillStyle = 'rgba(255,220,160,.9)'; for (let q = 0; q < 5; q++) { g.beginPath(); g.arc(bx + 40 + q * 70, by + 20, 9, 0, 7); g.fill(); }
+          for (let q = 0; q < 4; q++) { const tx = x0 + 60 + q * 100, ty = PH - 46 + (q % 2) * 10; g.fillStyle = '#d9d2c6'; g.beginPath(); g.ellipse(tx, ty, 26, 7, 0, 0, 7); g.fill(); g.fillStyle = '#1e1612'; g.fillRect(tx - 2, ty, 4, 30); g.fillRect(tx - 34, ty - 10, 6, 40); g.fillRect(tx + 28, ty - 10, 6, 40); } }
+        if (t.k === 'pain') { for (let sh = 0; sh < 3; sh++) { g.fillStyle = '#7a5434'; g.fillRect(bx + 8, by + 40 + sh * 34, bw - 16, 4);
+            for (let q = 0; q < 16; q++) { g.fillStyle = ['#c98a3c', '#b8742c', '#e0a85a'][(r() * 3) | 0]; g.beginPath(); g.ellipse(bx + 20 + q * 22, by + 32 + sh * 34, 10, 6, r(), 0, 7); g.fill(); } }
+          g.fillStyle = 'rgba(220,235,240,.55)'; g.fillRect(bx + 20, by + bh - 40, bw - 40, 40); g.fillStyle = '#5a3a24'; g.fillRect(bx + 20, by + bh - 14, bw - 40, 14); }
+        if (t.k === 'optique') { for (let sh = 0; sh < 4; sh++) { g.fillStyle = '#ffffff'; g.fillRect(bx + 10, by + 26 + sh * 30, bw - 20, 2);
+            for (let q = 0; q < 12; q++) { g.strokeStyle = ['#222', '#7a4a2a', '#2a4a7a'][(r() * 3) | 0]; g.lineWidth = 2; const gx = bx + 22 + q * 30, gy = by + 18 + sh * 30; g.beginPath(); g.arc(gx, gy, 5, 0, 7); g.arc(gx + 12, gy, 5, 0, 7); g.stroke(); } }
+          g.fillStyle = '#ffffff'; g.fillRect(bx + bw / 2 - 50, by + bh - 30, 100, 30); }
+        if (t.k === 'mode') { for (let rk = 0; rk < 2; rk++) { const rx = bx + 20 + rk * (bw / 2); g.fillStyle = '#888'; g.fillRect(rx, by + 40, bw / 2 - 40, 3);
+            for (let q = 0; q < 12; q++) { g.fillStyle = `hsl(${(r() * 360) | 0},${25 + r() * 35}%,${35 + r() * 35}%)`; g.fillRect(rx + 4 + q * ((bw / 2 - 48) / 12), by + 43, 10, 50 + r() * 20); } }
+          g.fillStyle = '#e8e2d8'; g.beginPath(); g.ellipse(x0 + 80, PH - 90, 14, 40, 0, 0, 7); g.fill(); g.beginPath(); g.arc(x0 + 80, PH - 140, 10, 0, 7); g.fill(); }
+        if (t.k === 'agence') { for (let q = 0; q < 3; q++) { g.fillStyle = '#3d5878'; g.fillRect(bx + 20 + q * (bw / 3), by + 30, bw / 3 - 40, 46); g.fillStyle = 'rgba(255,255,255,.8)'; g.fillRect(bx + 28 + q * (bw / 3), by + 60, bw / 3 - 56, 4); }
+          for (let q = 0; q < 2; q++) { const dx = x0 + 120 + q * 200; g.fillStyle = '#f2f2f2'; g.fillRect(dx, PH - 70, 110, 10); g.fillStyle = '#2b2b2e'; g.fillRect(dx + 10, PH - 60, 6, 40); g.fillRect(dx + 94, PH - 60, 6, 40); g.fillStyle = '#20252c'; g.fillRect(dx + 40, PH - 92, 30, 20); } }
+        g.fillStyle = '#2c2f33'; g.fillRect(x0 + W / 2 - 3, 0, 6, PH);                                                     // mullion between the two panes
+      }
+      const sky = g.createLinearGradient(0, 0, 0, PH); sky.addColorStop(0, 'rgba(210,225,240,.28)'); sky.addColorStop(0.5, 'rgba(210,225,240,0)'); g.fillStyle = sky; g.fillRect(0, 0, c.width, PH);   // glass reflection
       const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; };
+    const signTex = (bg, txt) => { const c = document.createElement('canvas'); c.width = 512; c.height = 72; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 72);
+      gr.addColorStop(0, bg[0]); gr.addColorStop(1, bg[1]); g.fillStyle = gr; g.fillRect(0, 0, 512, 72); g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 3; g.strokeRect(6, 6, 500, 60);
+      g.fillStyle = '#ffffff'; g.font = '600 34px Montserrat, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, 256, 38);
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.anisotropy = 8; return t; };
+    const SIGNS = { Enseigne_a: signTex(['#b8162a', '#7c0d1b'], 'PÂTISSERIE · CAFÉ'), Enseigne_b: signTex(['#1e4e8c', '#122f57'], 'OPTIQUE'), Enseigne_c: signTex(['#d39a1d', '#9a6b0e'], 'BOULANGERIE'), Enseigne_d: signTex(['#1f7a45', '#11482a'], 'PHARMACIE') };
     const tDay = atlas(false), tLit = atlas(true), tShop = shops();
     const tClad = (() => { const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d'); let s2 = 29; const r = () => { s2 = (s2 * 16807) % 2147483647; return s2 / 2147483647; };
       for (let j = 0; j < 4; j++) for (let i = 0; i < 2; i++) { const v = 52 + r() * 10; g.fillStyle = `rgb(${v},${v + 1},${v + 3})`; g.fillRect(i * 256, j * 128, 256, 128); }   // 1.2 x 0.6 m panels, slightly varied
       for (let k = 0; k < 6000; k++) { g.fillStyle = `rgba(${r() < 0.5 ? '0,0,0' : '255,255,255'},${r() * 0.06})`; g.fillRect(r() * 512, r() * 512, 2, 2); }
       g.fillStyle = 'rgba(0,0,0,.55)'; for (let j = 0; j <= 4; j++) g.fillRect(0, j * 128 - 1, 512, 3); for (let i = 0; i <= 2; i++) g.fillRect(i * 256 - 1, 0, 3, 512);
       const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; })();
+    function signUV(mesh, su, y0, sv) {               // like planeUV, but u runs left-to-right as seen from outside each face, so sign text is never mirrored
+      const gm = mesh.geometry, P = gm.attributes.position, N = gm.attributes.normal; mesh.updateMatrixWorld(true);
+      const M = mesh.matrixWorld, NM = new THREE.Matrix3().getNormalMatrix(M), uv = new Float32Array(P.count * 2), v = new THREE.Vector3(), n = new THREE.Vector3(), rt = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+      for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).applyMatrix4(M); n.fromBufferAttribute(N, i).applyMatrix3(NM).normalize();
+        rt.crossVectors(up, n).normalize(); uv[2 * i] = v.dot(rt) / su; uv[2 * i + 1] = (v.y - y0) / sv; }
+      gm.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    }
     function planeUV(mesh, su, y0, sv) {                       // horizontal metres / su, height (y - y0) / sv: windows line up with the storeys
       const gm = mesh.geometry, P = gm.attributes.position, N = gm.attributes.normal; mesh.updateMatrixWorld(true);
       const M = mesh.matrixWorld, NM = new THREE.Matrix3().getNormalMatrix(M), uv = new Float32Array(P.count * 2), v = new THREE.Vector3(), n = new THREE.Vector3();
@@ -398,7 +434,9 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
     site.traverse(o => {
       if (!o.isMesh) return; const n = o.material.name;
       if (n === 'Vitrage' || n === 'Vitrage_lit') { planeUV(o, 1.3 * 8, 6.0, 3.2 * 4); o.material = n === 'Vitrage' ? gV : gL; }
-      else if (n === 'Vitrine') { planeUV(o, 3.5 * 6, 0.4, 4.1); o.material = gS; }
+      else if (n === 'Vitrine') { planeUV(o, 3.5 * 12, 0.4, 4.1); o.material = gS; }
+      else if (SIGNS[n]) { signUV(o, 7, 4.6, 1.0); const m = o.material; if (!m.userData.sign) { m.userData.sign = 1; m.map = SIGNS[n]; m.color.set(0xffffff); m.emissive.set(0xffffff); m.emissiveMap = SIGNS[n]; m.emissiveIntensity = 0.25; m.roughness = 0.4; m.needsUpdate = true;
+        glow.push([m, new THREE.Color(0xffffff), 0.25, new THREE.Color(0xffffff), 1.3]); } }
       else if (n === 'Mur') { planeUV(o, 2.4, 0, 2.4); o.material.map = tClad; o.material.color.set(0xffffff); o.material.roughness = 0.7; o.material.needsUpdate = true; }
     });
   }
