@@ -84,7 +84,7 @@ button,.btn{font:inherit;border:0;cursor:pointer}
   <div class="ticks"><span style="left:0">Matin</span><span style="left:40%;transform:translateX(-50%)">Midi</span><span style="left:81%;transform:translateX(-50%)">Coucher</span><span style="right:0">Nuit</span></div></div>
 <div id="hint">Glissez pour tourner · choisissez un étage à gauche</div>
 <div id="tip"></div><div id="err"></div>
-<div id="credit">Démo · bâtiment d'après les plans et vidéos Sopimem · environnement © contributeurs OpenStreetMap · v24</div>
+<div id="credit">Démo · bâtiment d'après les plans et vidéos Sopimem · environnement © contributeurs OpenStreetMap · v25</div>
 <div id="load"><h2>NEWLINE</h2><p>Chargement de la résidence</p><div id="bar"><i></i></div><div id="pct">0 %</div></div>
 <button id="todPill" class="btn" aria-label="Heure">🕑 <span id="todPillT">10:00</span></button>
 
@@ -106,7 +106,8 @@ addEventListener('error', e => showErr('Erreur : ' + e.message));
 const isTouch = matchMedia('(pointer:coarse)').matches;
 
 const canvas = $('c');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+const LOGZ = new URLSearchParams(location.search).get('logz') === '1';   // test switch: very precise depth (thin ground layers never fight)
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', logarithmicDepthBuffer: LOGZ });
 renderer.setPixelRatio(Math.min(devicePixelRatio, isTouch ? 1.5 : 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.shadowMap.enabled = !isTouch; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = false; renderer.shadowMap.needsUpdate = true;
