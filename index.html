@@ -401,7 +401,7 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
       if (!o.isMesh || !o.geometry.attributes.uv1) return; const tg = tagOf(o); if (!LMS[tg]) return;
       const key = o.material.uuid + tg; let m = clones.get(key);
       if (!m) { const src = o.material; m = src.clone(); m.onBeforeCompile = src.onBeforeCompile; if (src.customProgramCacheKey) m.customProgramCacheKey = src.customProgramCacheKey;
-        m.lightMap = LMS[tg]; m.lightMapIntensity = 0; m.envMapIntensity = 0.12; BAKED.push(m); clones.set(key, m);
+        m.clippingPlanes = src.clippingPlanes; m.lightMap = LMS[tg]; m.lightMapIntensity = 0; m.envMapIntensity = 0.12; BAKED.push(m); clones.set(key, m);
         const gl_ = glow.find(g => g[0] === src); if (gl_) glow.push([m, gl_[1], gl_[2], gl_[3], gl_[4]]);
         if (cityMats.includes(src)) cityMats.push(m); }
       o.material = m;
