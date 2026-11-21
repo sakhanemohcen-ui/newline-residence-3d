@@ -230,7 +230,7 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
       for (const gg of [g1, g2]) { const ng = gg.toNonIndexed(); P.push(...ng.attributes.position.array); U.push(...ng.attributes.uv.array); N.push(...ng.attributes.normal.array); }
       g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); g.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); return g; })();
     [['residence/sprite_island_tree_01.png', 0, 1.04, 0.96], ['residence/sprite_island_tree_02.png', 1, 1.28, 1.23]].forEach(([url, kind, aspect, topW]) => {
-      const list = R.trees.filter(t => t[3] === kind); if (!list.length) return;
+      const list = R.trees.filter((t, i) => t[3] === kind && (!isTouch || Math.hypot(t[0] - R.centre[0], t[1] - R.centre[1]) < 900 || i % 4 === 0)); if (!list.length) return;   // phones: far trees thinned
       const tex = new THREE.TextureLoader().load(url); tex.colorSpace = THREE.SRGBColorSpace;
       const mat = new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.9, color: 0xe4f5d0, emissive: 0xa8d890, emissiveMap: tex, emissiveIntensity: 0.4 });   // greener, like the drone footage   // sprites have baked shading: lift them so they don't read too dark
       const im = new THREE.InstancedMesh(cross, mat, list.length); const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
@@ -329,7 +329,7 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
         for (const i of [ia, ib, ic]) col.set(c, 3 * i);
         // roof triangles (facing up, above 6 m): scatter rooftop objects by area
         cr.subVectors(v1, v0).cross(w.subVectors(v2, v0)); const area = cr.length() / 2;
-        if (cr.y / (2 * area || 1) > 0.9 && v0.y > 6 && area > 4 && tanks.length + heads.length < 16000 && Math.hypot(v0.x - R.centre[0], v0.z + R.centre[1]) < 1300) {
+        if (cr.y / (2 * area || 1) > 0.9 && v0.y > 6 && area > 4 && tanks.length + heads.length < (isTouch ? 3500 : 16000) && Math.hypot(v0.x - R.centre[0], v0.z + R.centre[1]) < (isTouch ? 700 : 1300)) {
           let n = area / 90; while (n > 0) { if (rnd() < n) { let a = rnd(), b = rnd(); if (a + b > 1) { a = 1 - a; b = 1 - b; }
             const p = v0.clone().addScaledVector(w.subVectors(v1, v0), a).addScaledVector(cr.subVectors(v2, v0), b);
             (rnd() < 0.7 ? tanks : heads).push([p.x, p.y, p.z, rnd()]); cr.subVectors(v1, v0).cross(w.subVectors(v2, v0)); } n -= 1; }
@@ -479,14 +479,14 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
     for (const l of lanes) { const n = Math.round(l.len / (l.main ? 38 : 70)); for (let i = 0; i < n; i++) cars.push({ l, s: rl() * l.len, v: (l.main ? 13 : 9) + rl() * 4, off: l.main ? (rl() < 0.5 ? -1.9 : 1.6) : 0.9 }); }
     const mergeParts = parts => { const g = new THREE.BufferGeometry(); for (const at of ['position', 'normal']) { const arr = []; for (const q of parts) arr.push(...q.toNonIndexed().attributes[at].array); g.setAttribute(at, new THREE.Float32BufferAttribute(arr, 3)); } return g; };
     const prof = (pts, depth, bev) => { const sh = new THREE.Shape(); sh.moveTo(pts[0][0], pts[0][1]); for (const q of pts.slice(1)) sh.lineTo(q[0], q[1]);
-      const g = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 3, curveSegments: 4 }); g.translate(0, 0, -depth / 2); return g; };
+      const g = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: isTouch ? 1 : 3, curveSegments: 4 }); g.translate(0, 0, -depth / 2); return g; };
     const carKit = suv => {                       // side profile (x = length, y = height), extruded across the width; glass band slightly wider than the body = side windows
       const body = suv ? prof([[-2.1, 0.36], [2.1, 0.36], [2.18, 0.66], [2.05, 0.95], [1.2, 1.04], [0.75, 1.55], [-1.7, 1.6], [-2.08, 1.3], [-2.12, 0.98]], 1.62, 0.1)
                        : prof([[-2.25, 0.3], [2.25, 0.3], [2.3, 0.58], [2.15, 0.8], [1.05, 0.9], [0.35, 1.36], [-0.95, 1.4], [-1.7, 1.02], [-2.25, 0.96]], 1.56, 0.1);
       const cab = suv ? prof([[1.12, 1.08], [0.72, 1.5], [-1.62, 1.54], [-1.98, 1.3], [-1.98, 1.06]], 1.7, 0.02) : prof([[0.96, 0.94], [0.32, 1.31], [-0.92, 1.35], [-1.6, 1.0]], 1.66, 0.02);
       const L = suv ? 2.12 : 2.27, wz = suv ? 0.83 : 0.8, wr = suv ? 0.36 : 0.32;
-      const wheels = mergeParts([[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([sx, sz]) => new THREE.CylinderGeometry(wr, wr, 0.24, 16).rotateX(Math.PI / 2).translate(sx * (L - 0.85), wr, sz * wz)));
-      const hubs = mergeParts([[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([sx, sz]) => new THREE.CylinderGeometry(wr * 0.55, wr * 0.55, 0.02, 12).rotateX(Math.PI / 2).translate(sx * (L - 0.85), wr, sz * (wz + 0.125))));
+      const wheels = mergeParts([[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([sx, sz]) => new THREE.CylinderGeometry(wr, wr, 0.24, isTouch ? 8 : 16).rotateX(Math.PI / 2).translate(sx * (L - 0.85), wr, sz * wz)));
+      const hubs = mergeParts([[1, 1], [1, -1], [-1, 1], [-1, -1]].map(([sx, sz]) => new THREE.CylinderGeometry(wr * 0.55, wr * 0.55, 0.02, isTouch ? 6 : 12).rotateX(Math.PI / 2).translate(sx * (L - 0.85), wr, sz * (wz + 0.125))));
       const bump = mergeParts([new THREE.BoxGeometry(0.14, 0.2, 1.6).translate(L + 0.02, 0.42, 0), new THREE.BoxGeometry(0.14, 0.2, 1.6).translate(-L - 0.02, 0.42, 0)]);
       const fl = mergeParts([new THREE.BoxGeometry(0.06, 0.1, 0.34).translate(L + 0.04, 0.66, 0.55), new THREE.BoxGeometry(0.06, 0.1, 0.34).translate(L + 0.04, 0.66, -0.55)]);
       const tl = mergeParts([new THREE.BoxGeometry(0.06, 0.12, 0.38).translate(-L - 0.04, 0.8, 0.55), new THREE.BoxGeometry(0.06, 0.12, 0.38).translate(-L - 0.04, 0.8, -0.55)]);
@@ -509,7 +509,8 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
         side.crossVectors(dir, up).multiplyScalar(c.off); pos.add(side); return [pos.x, pos.z, Math.atan2(-dir.z, dir.x)]; }));
     }
     if (R.parked && R.parked.length) {
-      const near = R.parked.filter(([x, y]) => Math.hypot(x - R.centre[0], y - R.centre[1]) < 650), far = R.parked.filter(([x, y]) => Math.hypot(x - R.centre[0], y - R.centre[1]) >= 650);
+      const NR = isTouch ? 350 : 650, FR = isTouch ? 1200 : 1e9;   // phones: detailed cars only close by, plain ones up to 1.2 km
+      const near = R.parked.filter(([x, y]) => Math.hypot(x - R.centre[0], y - R.centre[1]) < NR), far = R.parked.filter(([x, y]) => { const d = Math.hypot(x - R.centre[0], y - R.centre[1]); return d >= NR && d < FR; });
       carFleet(near.map(([x, y, a]) => [x, -y, a]));
       const PC = [0xf2f2f0, 0xf2f2f0, 0xe6e6e4, 0xc4c6c9, 0x9a9da2, 0x2a2c30, 0x6e1a20, 0x26385a, 0xdcd6c8];
       const pb2 = new THREE.BoxGeometry(4.2, 0.75, 1.75).translate(0, 0.55, 0), pc2 = new THREE.BoxGeometry(2.2, 0.5, 1.55).translate(-0.3, 1.15, 0);
@@ -812,7 +813,9 @@ const clock = new THREE.Clock();
 let lastMove = 0, hq = false, fast = 2;
 function invalidate(shadows) { lastMove = performance.now(); hq = false; fast = 2; if (shadows) renderer.shadowMap.needsUpdate = true; }
 THREE.DefaultLoadingManager.onLoad = () => invalidate(true);            // textures arriving late (trees, sky) redraw once
-function draw(full) { dome.position.copy(camera.position); drawTags(); if (full && composer) composer.render(); else renderer.render(scene, camera); }
+let prNow = 0; const prRest = Math.min(devicePixelRatio, isTouch ? 1.75 : 2), prMove = isTouch ? Math.min(devicePixelRatio, 1.0) : prRest;
+function draw(full) { const pr = full || !isTouch ? prRest : prMove; if (pr !== prNow) { prNow = pr; renderer.setPixelRatio(pr); renderer.setSize(innerWidth, innerHeight, false); }   // phones: lighter image while moving, sharp at rest
+  dome.position.copy(camera.position); drawTags(); if (full && composer) composer.render(); else renderer.render(scene, camera); }
 function tick() {
   const dt = Math.min(0.05, clock.getDelta()); for (const f of ANIM) f(dt);
   let moving = false;
@@ -822,7 +825,7 @@ function tick() {
   const now = performance.now();
   if (moving) { lastMove = now; hq = false; draw(false); return; }
   if (fast > 0) { fast--; draw(false); return; }
-  if (!hq && now - lastMove > 160) { hq = true; draw(true); }
+  if (!hq && now - lastMove > 160) { hq = true; draw(true); }   // full quality (and full sharpness on phones) once the view rests
 }
 function resize() { renderer.setSize(innerWidth, innerHeight, false); if (composer) composer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.fov = innerWidth < innerHeight ? 55 : 40; camera.updateProjectionMatrix(); invalidate(); }
 addEventListener('resize', resize);
