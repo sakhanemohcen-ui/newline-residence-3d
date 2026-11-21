@@ -500,6 +500,46 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
     let tw = 0; once(dt => { tw += dt; walkers.forEach((w, i) => { w.x += w.v * dt; if (w.x > 74) w.v = -Math.abs(w.v); if (w.x < -56) w.v = Math.abs(w.v);
       const p = B(w.x, w.y); p.y = Math.abs(Math.sin(tw * 5.5 + w.ph)) * 0.04; q5.setFromAxisAngle(up5, Math.atan2(sa * Math.sign(w.v), ca * Math.sign(w.v)) - Math.PI / 2);
       sc5.set(1, w.h / 1.62, 1); m5.compose(p, q5, sc5); iP.setMatrixAt(i, m5); iH.setMatrixAt(i, m5); iL.setMatrixAt(i, m5); }); iP.instanceMatrix.needsUpdate = iH.instanceMatrix.needsUpdate = iL.instanceMatrix.needsUpdate = true; });
+    // street furniture along the residence front (building frame -> world): kerb, zebra crossing at the entrance, lane dashes,
+    // benches, bins, bollards and a bus shelter, so the street reads like a real Algiers boulevard at eye level
+    {
+      const th = Math.atan2(sa, ca), qB = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), th), m8 = new THREE.Matrix4(), one8 = new THREE.Vector3(1, 1, 1);
+      const inst = (geo, mat, pts, shadow = true) => { const im = new THREE.InstancedMesh(geo, mat, pts.length);
+        pts.forEach(([x, y, z = 0], i) => { const p = B(x, y); p.y = z; m8.compose(p, qB, one8); im.setMatrixAt(i, m8); });
+        im.castShadow = shadow; im.receiveShadow = true; scene.add(im); return im; };
+      const stoneM = new THREE.MeshStandardMaterial({ color: 0xcfcac0, roughness: 0.85 }), paint = new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 0.7 });
+      const metal = new THREE.MeshStandardMaterial({ color: 0x2f3337, roughness: 0.45, metalness: 0.6 }), wood = new THREE.MeshStandardMaterial({ color: 0x8a6446, roughness: 0.7 });
+      // kerb stones (granite) on the pavement edge
+      inst(new THREE.BoxGeometry(144, 0.16, 0.3).translate(5, 0.08, 0), stoneM, [[0, -6.15]], false);
+      // zebra crossing in front of the entrance, across the near carriageway
+      const zebra = []; for (let y = -7.2; y > -17.5; y -= 1.0) zebra.push([33.8, y, 0.125]);
+      inst(new THREE.BoxGeometry(4.2, 0.02, 0.5), paint, zebra, false);
+      // benches + bins between the palms, bollards along the kerb
+      const benches = [], bins = [], bol = [];
+      for (let x = -52; x < 76; x += 12) { if (Math.abs(x - 33.8) < 8) continue; benches.push([x + 3, -3.3]); bins.push([x + 5.2, -3.3]); }
+      for (let x = -60; x < 78; x += 2.4) if (Math.abs(x - 33.8) > 2.6) bol.push([x, -5.85]);
+      const bench = (() => { const parts = [new THREE.BoxGeometry(1.8, 0.06, 0.45).translate(0, 0.45, 0), new THREE.BoxGeometry(1.8, 0.4, 0.05).translate(0, 0.72, -0.22)].map(g => g.toNonIndexed()); const g = new THREE.BufferGeometry();
+        for (const at of ['position', 'normal']) g.setAttribute(at, new THREE.Float32BufferAttribute([...parts[0].attributes[at].array, ...parts[1].attributes[at].array], 3)); return g; })();
+      inst(bench, wood, benches); inst(new THREE.BoxGeometry(1.6, 0.42, 0.08).translate(0, 0.21, 0), metal, benches);
+      inst(new THREE.CylinderGeometry(0.22, 0.2, 0.85, 12).translate(0, 0.43, 0), new THREE.MeshStandardMaterial({ color: 0x3d5a46, roughness: 0.6, metalness: 0.3 }), bins);
+      inst(new THREE.CylinderGeometry(0.07, 0.08, 0.85, 8).translate(0, 0.43, 0), metal, bol);
+      // bus shelter (glass, roof, lit advertising panel)
+      const sh = [[58, -4.6]];
+      inst(new THREE.BoxGeometry(4.6, 0.12, 1.7).translate(0, 2.55, 0.1), metal, sh);
+      inst(new THREE.BoxGeometry(4.4, 2.3, 0.04).translate(0, 1.3, -0.75), new THREE.MeshPhysicalMaterial({ color: 0xcfe2ea, transparent: true, opacity: 0.25, roughness: 0.05, clearcoat: 1 }), sh, false);
+      const adM = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff6e6, emissiveIntensity: 0.5, map: (() => { const c = document.createElement('canvas'); c.width = 128; c.height = 256; const g = c.getContext('2d');
+        const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, '#c8102e'); gr.addColorStop(1, '#7a0a1c'); g.fillStyle = gr; g.fillRect(0, 0, 128, 256); g.fillStyle = '#fff'; g.font = 'bold 22px Montserrat, sans-serif'; g.textAlign = 'center';
+        g.fillText('NEWLINE', 64, 120); g.font = '12px Montserrat, sans-serif'; g.fillText('Résidence', 64, 140); g.fillText('Bab Ezzouar', 64, 156); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })() });
+      inst(new THREE.BoxGeometry(1.2, 1.8, 0.08).translate(2.2, 1.25, 0.1), adM, sh); glow.push([adM, new THREE.Color(0xfff6e6), 0.5, new THREE.Color(0xfff6e6), 1.6]);
+      inst(new THREE.BoxGeometry(3, 0.05, 0.4).translate(-0.6, 0.48, -0.5), metal, sh);
+      // dashed lane lines on the boulevard carriageways near the residence
+      const dashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(3, 0.15).rotateX(-Math.PI / 2), paint, 4000); let nd = 0; const m9 = new THREE.Matrix4(), q9 = new THREE.Quaternion(), up9 = new THREE.Vector3(0, 1, 0);
+      for (const l of lanes) { if (!l.main) continue;
+        for (let s0 = 0; s0 < l.len && nd < 4000; s0 += 9) { let k = 1; while (k < l.L.length - 1 && l.L[k] < s0) k++; const a = l.P[k - 1], b = l.P[k], t = (s0 - l.L[k - 1]) / Math.max(0.01, l.L[k] - l.L[k - 1]);
+          const p = new THREE.Vector3().lerpVectors(a, b, t); if (Math.hypot(p.x - R.centre[0], p.z + R.centre[1]) > 700) continue; const d = new THREE.Vector3().subVectors(b, a).normalize();
+          p.y = 0.15; q9.setFromAxisAngle(up9, Math.atan2(-d.z, d.x)); m9.compose(p, q9, new THREE.Vector3(1, 1, 1)); dashes.setMatrixAt(nd++, m9); } }
+      dashes.count = nd; dashes.receiveShadow = true; scene.add(dashes);
+    }
     // rippling water: procedural normal map scrolling over pools and the bay
     const ripple = (() => { const N = 256, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d'), im = g.createImageData(N, N), H = (x, y) =>
         Math.sin((x * 3 + y * 1) * 6.283 / N * 2) + 0.6 * Math.sin((x * -2 + y * 5) * 6.283 / N * 2) + 0.4 * Math.sin((x * 7 - y * 3) * 6.283 / N * 2) + 0.25 * Math.sin((x * 11 + y * 9) * 6.283 / N);
