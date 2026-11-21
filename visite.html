@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Newline · F3 · Visite 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap">
+<style>
+:root{--red:#d1122f;--ink:#16181c;--paper:#ffffff;--mute:#6b7078}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#cfdbe6;font-family:Montserrat,system-ui,sans-serif;color:var(--ink)}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+canvas#c.drag{cursor:grabbing}
+.card{background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.14)}
+#brand{position:fixed;left:16px;top:16px;padding:12px 16px;z-index:5;max-width:60vw}
+#brand .tag{font-size:10px;letter-spacing:.18em;color:var(--red);font-weight:700;text-transform:uppercase}
+#brand h1{margin:2px 0 0;font-size:20px;font-weight:700;letter-spacing:.02em}
+#brand p{margin:2px 0 0;font-size:12px;color:var(--mute)}
+#apts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;max-width:300px}#apts a{font-size:12px;font-weight:700;text-decoration:none;color:var(--ink);padding:5px 12px;border-radius:999px;background:#eceff2}#apts a.on{background:var(--red);color:#fff}
+#top{position:fixed;right:16px;top:16px;display:flex;gap:8px;z-index:5;flex-wrap:wrap;justify-content:flex-end}
+button{font:inherit;border:0;cursor:pointer}
+.btn{padding:11px 16px;border-radius:999px;font-size:13px;font-weight:600;background:rgba(255,255,255,.94);color:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.red{background:var(--red);color:#fff;text-decoration:none;display:inline-block}
+#rooms{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:6px;padding:6px;z-index:5;max-width:calc(100vw - 24px);overflow-x:auto;scrollbar-width:none}
+#rooms::-webkit-scrollbar{display:none}
+#rooms button{white-space:nowrap;padding:9px 14px;border-radius:999px;background:transparent;font-size:12.5px;font-weight:600;color:var(--ink)}
+#rooms button.on{background:var(--ink);color:#fff}
+#where{position:fixed;left:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:5;padding:10px 14px;opacity:0;transform:translateY(8px);transition:.35s;pointer-events:none}
+#where.show{opacity:1;transform:none}
+#where b{display:block;font-size:15px}
+#where span{font-size:12px;color:var(--mute)}
+#map{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:5;padding:8px;line-height:0;transition:.3s}
+#map.hide{opacity:0;pointer-events:none;transform:translateY(8px)}
+#map canvas{width:190px;height:auto;border-radius:10px;cursor:pointer}
+#hint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;padding:12px 18px;font-size:13px;font-weight:500;background:rgba(22,24,28,.78);color:#fff;border-radius:999px;pointer-events:none;opacity:0;transition:opacity .5s;text-align:center;max-width:86vw}
+#hint.show{opacity:1}
+#load{position:fixed;inset:0;background:#111;color:#fff;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s}
+#load.done{opacity:0;pointer-events:none}
+#load h2{font-size:34px;font-weight:600;letter-spacing:.12em;margin:0}
+#load p{font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:.6;margin:10px 0 22px}
+#bar{width:220px;height:2px;background:#333}#bar i{display:block;height:100%;width:0;background:var(--red);transition:width .2s}
+#err{position:fixed;inset:auto 16px 16px 16px;z-index:30;background:#7a1020;color:#fff;padding:12px 16px;border-radius:12px;font-size:13px;display:none}
+#tod{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;width:min(380px,calc(100vw - 40px));background:rgba(20,22,26,.72);backdrop-filter:blur(8px);color:#fff;padding:8px 14px 6px;border-radius:14px;font-size:12px}
+#tod .row{display:flex;justify-content:space-between;align-items:baseline}#tod b{font-size:13px}
+#tod input{width:100%;accent-color:#f0c078;cursor:pointer;margin:4px 0 2px}
+#tod .ticks{position:relative;height:14px;color:#d8cfc2;font-size:10.5px}#tod .ticks span{position:absolute}
+@media (max-width:640px){
+  #tod{left:12px;transform:none;width:calc(100vw - 160px);padding:6px 10px 5px}
+  #brand{padding:9px 12px}#brand h1{font-size:16px}#brand p{display:none}
+  .btn{padding:9px 12px;font-size:12px}
+  #map canvas{width:120px}
+  #top{max-width:52vw}
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="brand" class="card">
+  <div class="tag">Sopimem · Bab Ezzouar</div>
+  <h1 id="aName">NEWLINE</h1>
+  <p id="aFacts"></p>
+  <div id="apts"><a href="index.html">← Résidence</a><a data-apt="f4a" href="?apt=f4a">F4A</a><a data-apt="f4b" href="?apt=f4b">F4B</a><a data-apt="f4c" href="?apt=f4c">F4C</a><a data-apt="f4d" href="?apt=f4d">F4D</a></div>
+</div>
+
+<div id="top">
+  <button class="btn" id="bFurn">Vide</button>
+  <button class="btn primary" id="bMode">Entrer dans l'appartement</button>
+  <a class="btn red" id="bCta" href="https://wa.me/213560939151" target="_blank" rel="noopener">Prendre rendez-vous</a>
+</div>
+
+<div id="where" class="card"><b></b><span></span></div>
+<div id="map" class="card hide"><canvas id="mm"></canvas></div>
+<div id="rooms" class="card"></div>
+<div id="tod"><div class="row"><span>Heure</span><b id="todLabel"></b></div>
+  <input id="todRange" type="range" min="0" max="1000" value="200" aria-label="Heure de la journée">
+  <div class="ticks"><span style="left:0">Matin</span><span style="left:40%;transform:translateX(-50%)">Midi</span><span style="left:81%;transform:translateX(-50%)">Coucher</span><span style="right:0">Nuit</span></div></div>
+<div id="hint"></div>
+<div id="err"></div>
+<div id="load"><h2>NEWLINE</h2><p>Chargement de votre appartement</p><div id="bar"><i></i></div></div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/+esm';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js/+esm';
+import { RoomEnvironment } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/environments/RoomEnvironment.js/+esm';
+
+const $ = id => document.getElementById(id);
+const showErr = m => { const e = $('err'); e.textContent = m; e.style.display = 'block'; };
+window.addEventListener('error', e => showErr('Erreur : ' + e.message));
+window.addEventListener('unhandledrejection', e => showErr('Erreur : ' + (e.reason && e.reason.message || e.reason)));
+
+/* ------------------------------------------------------------ plan data
+   Plan pixels -> metres (same rule as the Blender script): x = px/80, z = -(895-py)/80 */
+if (!new URLSearchParams(location.search).get('apt')) location.replace('index.html');
+const APT = (new URLSearchParams(location.search).get('apt') || 'f4a').toLowerCase().replace(/[^a-z0-9]/g, '');
+const BASE = APT + '/';
+let PX = 80, Y0 = 895, ROOMS = [], EXTRA_ZONES = [], START = { at:[0,0], look:[0,0] };
+const P = (px, py) => new THREE.Vector3(px / PX, 0, -(Y0 - py) / PX);
+const EYE = 1.6, R = 0.18, CELL = 0.06;
+
+/* ------------------------------------------------------------ renderer */
+const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+let liteSaved = false; try { liteSaved = sessionStorage.getItem('lite') === '1'; } catch (e) {}
+const LITE = liteSaved ? 2 : (isTouch ? 1 : 0);              // 0 computer · 1 phone · 2 lightest (after a graphics-memory loss)
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !LITE, powerPreference: 'high-performance' });
+renderer.setPixelRatio(LITE > 1 ? 1 : Math.min(devicePixelRatio, LITE ? 1.5 : 2));
+renderer.shadowMap.enabled = false;        // all light and shadow is pre-rendered (baked) in Blender
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+canvas.addEventListener('webglcontextlost', e => {
+  e.preventDefault();
+  if (leaving) return;                                       // we dropped the context ourselves on purpose
+  if (LITE < 2) { try { sessionStorage.setItem('lite', '1'); } catch (_) {} location.reload(); return; }
+  showErr("La mémoire graphique est saturée. Fermez d'autres onglets puis rechargez la page.");
+});
+// free the GPU right away when leaving the page (switching apartment / back to the residence)
+let leaving = false;
+function freeGPU() {
+  leaving = true;
+  try {
+    scene.traverse(o => { if (o.geometry) o.geometry.dispose(); const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+      for (const m of ms) { for (const k in m) { const v = m[k]; if (v && v.isTexture) v.dispose(); } m.dispose(); } });
+    for (const t of Object.values(LM)) if (t && t.dispose) t.dispose();
+    renderer.dispose(); renderer.forceContextLoss();
+  } catch (_) {}
+}
+addEventListener('pagehide', freeGPU);
+document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (a && !a.target && a.href.indexOf('wa.me') < 0) { e.preventDefault(); freeGPU(); location.href = a.href; } }, true);
+
+const scene = new THREE.Scene();
+{ // sky gradient
+  const c = document.createElement('canvas'); c.width = 4; c.height = 256; const g = c.getContext('2d');
+  const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, '#7fb0e0'); gr.addColorStop(.55, '#cfe2f3'); gr.addColorStop(1, '#eef3f6');
+  g.fillStyle = gr; g.fillRect(0, 0, 4, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.mapping = THREE.EquirectangularReflectionMapping; scene.background = t;
+}
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.3;
+
+const camera = new THREE.PerspectiveCamera(60, 1, 0.05, 4000);
+camera.rotation.order = 'YXZ';
+
+/* ------------------------------------------------------------ textures */
+function canvasTex(size, draw, repeat = true) {
+  const c = document.createElement('canvas'); c.width = c.height = size; draw(c.getContext('2d'), size);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = LITE ? 2 : 4;
+  if (repeat) t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+}
+let seed = 11; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+const marble = (base, vein, tiles) => (g, S) => {
+  g.fillStyle = base; g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 60; i++) { g.fillStyle = `rgba(255,255,255,${rnd() * .10})`; g.beginPath(); g.ellipse(rnd() * S, rnd() * S, 40 + rnd() * 160, 20 + rnd() * 80, rnd() * 3, 0, 7); g.fill(); }
+  g.lineCap = 'round';
+  for (let i = 0; i < 16; i++) {                 // long diagonal veins, drawn 3x so they wrap across the edges
+    const x0 = rnd() * S, y0 = rnd() * S, len = S * (.5 + rnd() * .9), a = -0.6 + rnd() * .5, w = 1 + rnd() * 5, al = .30 + rnd() * .40;
+    for (const [ox, oy] of [[0,0],[S,0],[-S,0],[0,S],[0,-S]]) {
+      g.beginPath(); let x = x0 + ox, y = y0 + oy; g.moveTo(x, y);
+      let sd = i * 97 + 3; const r2 = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+      for (let k = 0; k < 8; k++) { const nx = x + Math.cos(a) * len / 8, ny = y + Math.sin(a) * len / 8 + (r2() - .5) * 50; g.quadraticCurveTo(x + (r2() - .5) * 40, y + (r2() - .5) * 40, nx, ny); x = nx; y = ny; }
+      g.strokeStyle = vein.replace('A', al.toFixed(2)); g.lineWidth = w; g.filter = `blur(${(w * .7).toFixed(1)}px)`; g.stroke(); g.filter = 'none';
+    }
+  }
+  if (tiles) { g.strokeStyle = 'rgba(120,105,90,.35)'; g.lineWidth = 1.5; for (let i = 0; i <= tiles; i++) { const p = Math.min(S - 1, i * S / tiles); g.beginPath(); g.moveTo(p, 0); g.lineTo(p, S); g.moveTo(0, p); g.lineTo(S, p); g.stroke(); } }
+};
+const woodTex = (g, S) => {
+  g.fillStyle = '#e9e9e9'; g.fillRect(0, 0, S, S);
+  for (let i = 0; i < 260; i++) { const x = rnd() * S, w = .6 + rnd() * 2.5; g.fillStyle = `rgba(${rnd() > .5 ? '40,25,10' : '255,255,255'},${.04 + rnd() * .12})`; g.fillRect(x, 0, w, S); }
+  for (let i = 0; i < 5; i++) { g.strokeStyle = 'rgba(40,25,10,.10)'; g.lineWidth = 2; g.beginPath(); const x = rnd() * S; g.moveTo(x, 0); g.bezierCurveTo(x + 30, S * .3, x - 30, S * .6, x + 10, S); g.stroke(); }
+};
+const TS = LITE ? 1024 : 2048;
+const tMarble = canvasTex(TS, marble('#e6ddd0', 'rgba(140,104,68,A)', 5));
+const tFaience = canvasTex(1024, marble('#e9e3d9', 'rgba(140,120,100,A)', 4));
+const tQuartz = canvasTex(512, marble('#f4f3f0', 'rgba(170,165,160,A)', 0));
+const tWood = canvasTex(512, woodTex);
+
+const MATS = {
+  Marbre_sol:   m => { m.map = tMarble; m.color.set(0xffffff); m.roughness = .16; m.metalness = 0; m.envMapIntensity = 1.6; return 1 / 6; },
+  Faience_sdb:  m => { m.map = tFaience; m.color.set(0xffffff); m.roughness = .2; return 1 / 2.4; },
+  Quartz_plan:  m => { m.map = tQuartz; m.color.set(0xffffff); m.roughness = .22; return 1 / 2; },
+  Bois_chene:   m => { m.map = tWood; m.color.set(0xb08a62); m.roughness = .5; return 1 / 1.2; },
+  Bois_noyer:   m => { m.map = tWood; m.color.set(0x6a4a36); m.roughness = .5; return 1 / 1.2; },
+  Ampoule:      m => { m.emissive = new THREE.Color(0xffe0b0); m.emissiveIntensity = 3; },
+  Miroir:       m => { m.metalness = 1; m.roughness = .03; m.color.set(0xffffff); },
+  Verre:        m => { m.transparent = true; m.opacity = .16; m.roughness = .03; m.metalness = 0; m.color.set(0xdfeef5); m.depthWrite = false; m.envMapIntensity = 2.5; },
+  Voilage:      m => { m.transparent = true; m.opacity = .55; m.side = THREE.DoubleSide; m.depthWrite = false; m.color.set(0x000000); m.emissive = new THREE.Color(0xffffff); m.emissiveIntensity = .85; },
+  Spot_LED:     m => { m.emissive = new THREE.Color(0xffe6c2); m.emissiveIntensity = 2.2; m.color.set(0xffffff); },
+  Mer:          m => { m.color.set(0x0b2a3d); m.emissive = new THREE.Color(0x2a6f97); m.emissiveIntensity = .9; m.roughness = .2; },
+  Ville:        m => { m.color.set(0x000000); m.emissive = new THREE.Color(0xb9b3a8); m.emissiveIntensity = .9; },
+  Immeubles:    m => { m.color.set(0x000000); m.emissive = new THREE.Color(0xe3ddd2); m.emissiveIntensity = .95; },
+  Laiton:       m => { m.color.set(0xd4a95f); m.metalness = 1; m.roughness = .3; },
+  Inox:         m => { m.metalness = 1; m.roughness = .25; },
+};
+function worldUV(mesh, s) {                            // texture coordinates in metres so marble and wood keep their real size
+  const g = mesh.geometry, p = g.attributes.position, n = g.attributes.normal; if (!n) return;
+  const uv = new Float32Array(p.count * 2), v = new THREE.Vector3(), nn = new THREE.Vector3(), nm = new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld);
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i).applyMatrix4(mesh.matrixWorld); nn.fromBufferAttribute(n, i).applyMatrix3(nm);
+    const ax = Math.abs(nn.x), ay = Math.abs(nn.y), az = Math.abs(nn.z);
+    if (ay >= ax && ay >= az) { uv[2*i] = v.x * s; uv[2*i+1] = v.z * s; } else if (ax >= az) { uv[2*i] = v.z * s; uv[2*i+1] = v.y * s; } else { uv[2*i] = v.x * s; uv[2*i+1] = v.y * s; }
+  }
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+}
+
+/* ------------------------------------------------------------ load the apartment */
+const groups = { Plafond: [], Spots: [], Furn: [], Exterieur: [] };
+const floorMeshes = []; let world, floorMain, SOLIDS = []; const matsA = [], LM = {};
+const BAKE_K = 0.3, GAIN = 0.6;                         // lightmaps were baked at 0.3x so they do not clip
+const texLoad = url => new Promise((res, rej) => new THREE.TextureLoader().load(url, t => { t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.channel = 1; t.anisotropy = 4; res(t); }, undefined, () => rej(new Error(url))));
+const tagOf = o => { for (let q = o; q; q = q.parent) if (q.userData && q.userData.c) return q.userData.c; return ''; };
+const bar = $('bar').firstElementChild;
+let cfg0 = null, viewRing = null;
+/* time of day: shared uniforms for all baked materials (day map <-> lamps-only night map, warm tint at dawn and dusk) */
+const TOD = { night: { value: 0 }, tint: { value: new THREE.Color(1, 1, 1) }, gainN: { value: 1.25 }, nightA: { value: null }, nightB: { value: null } };
+function todMat(m, atlas) {
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uNight = TOD.night; sh.uniforms.uTint = TOD.tint; sh.uniforms.uGainN = TOD.gainN; sh.uniforms.lightMapNight = atlas === 'A' ? TOD.nightA : TOD.nightB;
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+      uniform float uNight; uniform vec3 uTint; uniform float uGainN; uniform sampler2D lightMapNight;`)
+      .replace('vec4 lightMapTexel = texture2D( lightMap, vLightMapUv );', `vec4 lightMapTexel = texture2D( lightMap, vLightMapUv );
+      lightMapTexel.rgb = mix(lightMapTexel.rgb * uTint, texture2D( lightMapNight, vLightMapUv ).rgb * uGainN, uNight);`);
+  };
+  m.customProgramCacheKey = () => 'tod' + atlas;
+}
+/* real view through the windows: a 360° ring made from the drone frames (bay of Algiers, minaret, city), horizon at eye height.
+   The bay (centre of the strip, u≈0.58) is turned towards the living room windows. */
+const VIEW = {};
+function addRealView(cfg) {
+  const RR = 800, img = new Image();
+  const fb = new THREE.Box3().setFromObject(floorMain), c = fb.getCenter(new THREE.Vector3());
+  let dir = 0; const sj = (cfg.rooms || []).find(r => r.id === 'sejour');
+  if (sj) {                                                  // living room side that touches the façade = outward normal of its box edge nearest the floor outline
+    const a = P(sj.box[0], sj.box[1]), b = P(sj.box[2], sj.box[3]);
+    const s = { x0: Math.min(a.x, b.x), x1: Math.max(a.x, b.x), z0: Math.min(a.z, b.z), z1: Math.max(a.z, b.z) };
+    const cand = [[s.x0 - fb.min.x, -1, 0], [fb.max.x - s.x1, 1, 0], [s.z0 - fb.min.z, 0, -1], [fb.max.z - s.z1, 0, 1]].sort((p, q) => p[0] - q[0]);
+    dir = Math.atan2(cand[0][1], cand[0][2]);
+  }
+  img.onload = () => {
+    if (leaving) return;
+    const W = img.width, H = img.height, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
+    g.drawImage(img, 0, 0);
+    const bot = g.getImageData(0, H - 24, W, 24).data; let r = 0, gg = 0, bb = 0, n = 0;
+    for (let i = 0; i < bot.length; i += 64) { r += bot[i]; gg += bot[i + 1]; bb += bot[i + 2]; n++; }
+    g.globalCompositeOperation = 'destination-in';             // soft top edge so the strip melts into the sky
+    const gr = g.createLinearGradient(0, 0, 0, H * .3); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,1)'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1; t.offset.x = 1; t.anisotropy = 4;
+    const HH = 2 * Math.PI * RR * H / W, HZ = 290 / H;        // ring height keeps the photo's aspect; horizon at row 290
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(RR, RR, HH, 128, 1, true),
+      new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, transparent: true, depthWrite: false, toneMapped: false, fog: false }));
+    const eye = 1.6, top = eye + HH * HZ, bottom = top - HH;
+    ring.position.set(c.x, (top + bottom) / 2, c.z);
+    ring.rotation.y = dir - 0.42 * 2 * Math.PI;
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(RR, 64), new THREE.MeshBasicMaterial({ color: new THREE.Color(`rgb(${r / n | 0},${gg / n | 0},${bb / n | 0})`).convertSRGBToLinear(), toneMapped: false, fog: false }));
+    ground.rotation.x = -Math.PI / 2; ground.position.set(c.x, bottom + 0.5, c.z);
+    const nc = document.createElement('canvas'); nc.width = W; nc.height = H; const ng = nc.getContext('2d');      // night version of the same view
+    ng.filter = 'brightness(0.16) saturate(0.6)'; ng.drawImage(img, 0, 0); ng.filter = 'none';
+    ng.globalCompositeOperation = 'multiply'; ng.fillStyle = '#5a6fae'; ng.fillRect(0, 0, W, H); ng.globalCompositeOperation = 'source-over';
+    const sk = ng.createLinearGradient(0, 0, 0, 290); sk.addColorStop(0, '#05070f'); sk.addColorStop(1, '#1a2238'); ng.fillStyle = sk;
+    const src = g.getImageData(0, 0, W, H).data;
+    for (let i = 0; i < 9000; i++) { const x = (Math.random() * W) | 0, y = (296 + Math.random() * (H - 296)) | 0, k = 4 * (y * W + x);      // window lights on the land only
+      if (src[k + 2] > src[k] + 25 && src[k + 2] > 90) continue;                                                             // skip the sea
+      const w = Math.random(); ng.fillStyle = `rgba(255,${(190 + w * 50) | 0},${(110 + w * 70) | 0},${0.55 + w * 0.45})`; ng.fillRect(x, y, 1 + (w > 0.8), 1); }
+    for (let i = 0; i < 260; i++) { const x = Math.random() * W, y = 287 + Math.random() * 6; ng.fillStyle = 'rgba(255,220,160,.8)'; ng.fillRect(x, y, 1, 1); }   // far coast lights on the horizon
+    ng.globalCompositeOperation = 'destination-in'; const gr2 = ng.createLinearGradient(0, 0, 0, H * .3); gr2.addColorStop(0, 'rgba(0,0,0,0)'); gr2.addColorStop(1, 'rgba(0,0,0,1)'); ng.fillStyle = gr2; ng.fillRect(0, 0, W, H);
+    const tn = new THREE.CanvasTexture(nc); tn.colorSpace = THREE.SRGBColorSpace; tn.wrapS = THREE.RepeatWrapping; tn.repeat.x = -1; tn.offset.x = 1;
+    const ringN = new THREE.Mesh(ring.geometry, new THREE.MeshBasicMaterial({ map: tn, side: THREE.BackSide, transparent: true, opacity: 0, depthWrite: false, toneMapped: false, fog: false }));
+    ringN.position.copy(ring.position); ringN.rotation.copy(ring.rotation); ringN.scale.setScalar(0.999); ringN.renderOrder = 0;
+    VIEW.ring = ring; VIEW.ringN = ringN; VIEW.ground = ground; VIEW.g0 = ground.material.color.clone();
+    viewRing = new THREE.Group(); viewRing.add(ring, ringN, ground); viewRing.renderOrder = -1; ring.renderOrder = -1; ground.renderOrder = -2; applyTime();
+    scene.add(viewRing); applyMode();
+  };
+  img.src = 'common/vue_baie.jpg?v=2';
+}
+fetch(BASE + 'apt.json').then(r => { if (!r.ok) throw new Error('appartement inconnu : ' + APT); return r.json(); }).then(cfg => {
+  PX = cfg.px; Y0 = cfg.y0; ROOMS = cfg.rooms; EXTRA_ZONES = cfg.zones || []; START = cfg.start; cfg0 = cfg;
+  document.title = 'Newline · ' + cfg.type + ' · Visite 3D';
+  $('aName').textContent = 'NEWLINE · ' + cfg.type; $('aFacts').textContent = cfg.facts;
+  for (const a of $('apts').children) a.classList.toggle('on', a.dataset.apt === APT);
+  return Promise.all([
+  texLoad(BASE + (LITE ? 'lm_A_2k.jpg' : 'lm_A.jpg')), texLoad(BASE + 'lm_B.jpg'), Promise.resolve(null),
+  fetch(BASE + 'solids.json').then(r => r.json()),
+  new Promise((res, rej) => new GLTFLoader().load(BASE + 'model.glb', res, e => { if (e.total) bar.style.width = (100 * e.loaded / e.total) + '%'; }, rej)),
+]); }).then(([la, lb, lav, solids, gltf]) => {
+  LM.A = la; LM.B = lb; LM.Avide = lav; SOLIDS = solids; TOD.nightA.value = la; TOD.nightB.value = lb;   // until the night maps arrive
+  texLoad(BASE + 'lm_A_nuit.jpg').then(t => { if (!leaving) { TOD.nightA.value = t; LM.An = t; } }).catch(() => {});
+  texLoad(BASE + 'lm_B_nuit.jpg').then(t => { if (!leaving) { TOD.nightB.value = t; LM.Bn = t; } }).catch(() => {});
+  world = gltf.scene; scene.add(world); world.updateMatrixWorld(true);
+  const cache = new Map();
+  world.traverse(o => {
+    if (!o.isMesh) return;
+    const c = tagOf(o), atlas = c.startsWith('Bake_A') ? 'A' : c.startsWith('Bake_B') ? 'B' : '';
+    const name = o.material.name, key = name + '|' + atlas; let e = cache.get(key);
+    if (!e) { const m = o.material.clone(); m.name = name; const f = MATS[name]; const scale = f ? (f(m) || 0) : 0;
+      if (atlas) { m.lightMap = LM[atlas]; m.lightMapIntensity = Math.PI / BAKE_K * GAIN; if (atlas === 'A') matsA.push(m); todMat(m, atlas); }
+      e = { m, scale }; cache.set(key, e); }
+    o.material = e.m; if (e.scale) worldUV(o, e.scale); NAMED[name] = e.m;
+    if (c === 'Bake_A_plafond') groups.Plafond.push(o); else if (c === 'Bake_B_spots') groups.Spots.push(o); else if (c === 'Bake_B') groups.Furn.push(o); else if (c === 'Exterieur') groups.Exterieur.push(o);
+    if (name === 'Marbre_sol') { floorMain = o; floorMeshes.push(o); }
+    if (name === 'Tapis_creme') floorMeshes.push(o);
+    if (name === 'Verre' || name === 'Voilage') o.renderOrder = 2;
+  });
+  addRealView(cfg0);
+  buildGrid(); buildMinimap(); buildChips(); resize(); applyTime();
+  setDollPose(); camera.position.copy(doll.pos); camera.lookAt(doll.target); applyMode();
+  if (!isTouch && LITE === 2) try { sessionStorage.removeItem('lite'); } catch (_) {}
+  $('load').classList.add('done'); hint(isTouch ? 'Glissez pour tourner · touchez une pièce pour y entrer' : 'Glissez pour tourner · cliquez sur une pièce pour y entrer', 4500);
+  renderer.setAnimationLoop(tick);
+}).catch(e => showErr('Impossible de charger la visite 3D : ' + (e.message || e)));
+
+/* ------------------------------------------------------------ walkable grid + path finding */
+let gx0, gz0, GW, GH, blocked, wallsOnly, furnished = true;
+const conv = s => [s[1], -s[4], s[3], -s[2]];            // Blender (x, y) -> three (x, -z)
+function rasterize(solids, grow) {
+  const g = new Uint8Array(GW * GH);
+  for (const [x1, z1, x2, z2] of solids) {
+    const a = Math.max(0, Math.floor((x1 - grow - gx0) / CELL)), b = Math.min(GW - 1, Math.ceil((x2 + grow - gx0) / CELL));
+    const c = Math.max(0, Math.floor((z1 - grow - gz0) / CELL)), d = Math.min(GH - 1, Math.ceil((z2 + grow - gz0) / CELL));
+    for (let j = c; j <= d; j++) for (let i = a; i <= b; i++) {
+      const cx = gx0 + (i + .5) * CELL, cz = gz0 + (j + .5) * CELL;
+      const dx = Math.max(x1 - cx, 0, cx - x2), dz = Math.max(z1 - cz, 0, cz - z2);
+      if (dx * dx + dz * dz <= grow * grow) g[j * GW + i] = 1;
+    }
+  }
+  return g;
+}
+const cellOf = (x, z) => [Math.floor((x - gx0) / CELL), Math.floor((z - gz0) / CELL)];
+const isBlocked = (x, z) => { const [i, j] = cellOf(x, z); return i < 0 || j < 0 || i >= GW || j >= GH || blocked[j * GW + i] === 1; };
+function buildGrid() {
+  const fb = new THREE.Box3().setFromObject(floorMain);
+  gx0 = fb.min.x - .4; gz0 = fb.min.z - .4; GW = Math.ceil((fb.max.x - fb.min.x + .8) / CELL); GH = Math.ceil((fb.max.z - fb.min.z + .8) / CELL);
+  const walls = SOLIDS.filter(q => q[0] !== 'Mob').map(conv);
+  wallsOnly = rasterize(walls, 0);
+  blocked = rasterize(furnished ? SOLIDS.map(conv) : walls, R);
+  // keep only what can be reached from the entrance (so nothing sends you outside the walls)
+  const s = P(...START.at), [si, sj] = nearestFree(s.x, s.z, true), seen = new Uint8Array(GW * GH), q = [sj * GW + si]; seen[q[0]] = 1;
+  for (let h = 0; h < q.length; h++) { const k = q[h], i = k % GW, j = (k / GW) | 0;
+    for (const [di, dj] of [[1,0],[-1,0],[0,1],[0,-1]]) { const ni = i + di, nj = j + dj; if (ni < 0 || nj < 0 || ni >= GW || nj >= GH) continue; const nk = nj * GW + ni; if (!seen[nk] && !blocked[nk]) { seen[nk] = 1; q.push(nk); } } }
+  for (let k = 0; k < blocked.length; k++) if (!seen[k]) blocked[k] = 1;
+}
+function nearestFree(x, z, raw) {
+  let [i, j] = cellOf(x, z); i = Math.min(GW - 1, Math.max(0, i)); j = Math.min(GH - 1, Math.max(0, j));
+  if (!blocked[j * GW + i]) return [i, j];
+  for (let r = 1; r < 60; r++) { let best = null, bd = 1e9;
+    for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) { if (Math.max(Math.abs(di), Math.abs(dj)) !== r) continue; const ni = i + di, nj = j + dj; if (ni < 0 || nj < 0 || ni >= GW || nj >= GH || blocked[nj * GW + ni]) continue; const d = di * di + dj * dj; if (d < bd) { bd = d; best = [ni, nj]; } }
+    if (best) return best; }
+  return [i, j];
+}
+const centre = (i, j) => new THREE.Vector3(gx0 + (i + .5) * CELL, 0, gz0 + (j + .5) * CELL);
+function clearLine(a, b) { const d = a.distanceTo(b), n = Math.ceil(d / (CELL * .5)); for (let k = 1; k < n; k++) { const t = k / n; if (isBlocked(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t)) return false; } return true; }
+function findPath(from, to) {
+  const [si, sj] = nearestFree(from.x, from.z), [ti, tj] = nearestFree(to.x, to.z), N = GW * GH, S = sj * GW + si, T = tj * GW + ti;
+  const gS = new Float32Array(N).fill(Infinity), came = new Int32Array(N).fill(-1), closed = new Uint8Array(N);
+  const heap = [], push = (k, f) => { heap.push([f, k]); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+  const hgt = k => Math.hypot((k % GW) - ti, ((k / GW) | 0) - tj);
+  gS[S] = 0; push(S, hgt(S));
+  while (heap.length) { const [, k] = pop(); if (closed[k]) continue; closed[k] = 1; if (k === T) break; const i = k % GW, j = (k / GW) | 0;
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { if (!di && !dj) continue; const ni = i + di, nj = j + dj; if (ni < 0 || nj < 0 || ni >= GW || nj >= GH) continue; const nk = nj * GW + ni; if (blocked[nk] || closed[nk]) continue;
+      if (di && dj && (blocked[j * GW + ni] || blocked[nj * GW + i])) continue;
+      const ng = gS[k] + (di && dj ? 1.4142 : 1); if (ng < gS[nk]) { gS[nk] = ng; came[nk] = k; push(nk, ng + hgt(nk)); } } }
+  if (came[T] < 0 && T !== S) return null;
+  const cells = []; for (let k = T; k >= 0; k = came[k]) { cells.push(centre(k % GW, (k / GW) | 0)); if (k === S) break; }
+  cells.reverse();
+  const pts = [cells[0]]; let a = 0;                    // string-pull: keep only the corners
+  while (a < cells.length - 1) { let b = cells.length - 1; while (b > a + 1 && !clearLine(cells[a], cells[b])) b--; pts.push(cells[b]); a = b; }
+  return pts;
+}
+
+/* ------------------------------------------------------------ state: dollhouse / walk */
+let mode = 'doll';
+const doll = { target: new THREE.Vector3(), pos: new THREE.Vector3(), az: 0.35, el: 0.95, dist: 20 };
+const me = { x: 0, z: 0, yaw: 0, pitch: 0 };
+let route = null, fly = null, lastRoom = '';
+function setDollPose() {
+  const b = new THREE.Box3().setFromObject(floorMain); b.getCenter(doll.target); doll.target.y = 0;
+  const asp = innerWidth / innerHeight; const half = Math.max((b.max.x - b.min.x) / 2, (b.max.z - b.min.z) / 2 * asp * 0.8) + 2.6; doll.dist = THREE.MathUtils.clamp(half / (Math.tan(THREE.MathUtils.degToRad(19)) * asp), 19, 70);
+  orbitUpdate();
+}
+function orbitUpdate() { doll.pos.set(doll.target.x + doll.dist * Math.cos(doll.el) * Math.sin(doll.az), doll.dist * Math.sin(doll.el), doll.target.z + doll.dist * Math.cos(doll.el) * Math.cos(doll.az)); }
+const yawTo = (dx, dz) => Math.atan2(-dx, -dz);
+function applyMode() {
+  const walk = mode === 'walk';
+  for (const o of groups.Plafond) o.visible = walk;
+  for (const o of groups.Spots) o.visible = walk;
+  for (const o of groups.Exterieur) o.visible = walk && !viewRing;   // old placeholder outside, replaced by the real view
+  if (viewRing) viewRing.visible = walk;
+  $('bMode').textContent = walk ? 'Vue maquette 3D' : "Entrer dans l'appartement";
+  $('map').classList.toggle('hide', !walk);
+  camera.fov = walk ? (innerWidth >= innerHeight ? 68 : 84) : 38; camera.updateProjectionMatrix();
+  if (!walk) { $('where').classList.remove('show'); lastRoom = ''; markChip(''); }
+}
+function enterAt(pos, look) {                           // dive from the dollhouse into a spot
+  const [i, j] = nearestFree(pos.x, pos.z), p = centre(i, j);
+  const yaw = look ? yawTo(look.x - p.x, look.z - p.z) : yawTo(doll.target.x - p.x, doll.target.z - p.z);
+  const q1 = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.04, yaw, 0, 'YXZ'));
+  fly = { t: 0, dur: 1.7, p0: camera.position.clone(), q0: camera.quaternion.clone(), p1: new THREE.Vector3(p.x, EYE, p.z), q1, f0: camera.fov, f1: innerWidth >= innerHeight ? 68 : 84,
+          mid: () => { mode = 'walk'; applyMode(); }, end: () => { me.x = p.x; me.z = p.z; me.yaw = yaw; me.pitch = -0.04; hint(isTouch ? 'Touchez le sol pour avancer · glissez pour regarder' : 'Cliquez sur le sol pour avancer · glissez pour regarder · ZQSD / flèches', 4200); } };
+  route = null;
+}
+function exitToDoll() {
+  mode = 'doll'; applyMode(); route = null; orbitUpdate();
+  const m = new THREE.Matrix4().lookAt(doll.pos, doll.target, new THREE.Vector3(0, 1, 0));
+  fly = { t: 0, dur: 1.4, p0: camera.position.clone(), q0: camera.quaternion.clone(), p1: doll.pos.clone(), q1: new THREE.Quaternion().setFromRotationMatrix(m), f0: 68, f1: 38, end: () => {} };
+}
+function goTo(point, look) {
+  const from = new THREE.Vector3(me.x, 0, me.z), pts = findPath(from, point); if (!pts || pts.length < 2) return;
+  const last = pts[pts.length - 1];
+  route = { pts, i: 1, endYaw: look ? yawTo(look.x - last.x, look.z - last.z) : null };
+  ring.position.set(last.x, .02, last.z); ring.visible = true; ring.material.opacity = .9;
+}
+function goRoom(r) { const at = P(...r.at), look = P(...r.look); if (mode === 'doll') enterAt(at, look); else goTo(at, look); }
+
+/* ------------------------------------------------------------ UI */
+function buildChips() { const el = $('rooms'); for (const r of ROOMS) { const b = document.createElement('button'); b.textContent = r.name; b.dataset.id = r.id; b.onclick = () => { if (!fly) goRoom(r); }; el.appendChild(b); } }
+const markChip = id => { for (const b of $('rooms').children) b.classList.toggle('on', b.dataset.id === id); };
+let hintT = 0; function hint(t, ms = 3000) { const h = $('hint'); h.textContent = t; h.classList.add('show'); clearTimeout(hintT); hintT = setTimeout(() => h.classList.remove('show'), ms); }
+$('bMode').onclick = () => { if (fly) return; if (mode === 'doll') enterAt(P(...START.at), P(...START.look)); else exitToDoll(); };
+$('bFurn').onclick = async () => { if (!LM.Avide) { $('bFurn').textContent = '…'; LM.Avide = await texLoad(BASE + 'lm_A_vide.jpg'); } furnished = !furnished; for (const o of groups.Furn) o.visible = furnished; for (const m of matsA) m.lightMap = furnished ? LM.A : LM.Avide; $('bFurn').textContent = furnished ? 'Vide' : 'Meublé'; buildGrid(); route = null; };
+function whereAmI() {
+  const px = me.x * PX, py = Y0 + me.z * PX; let z = null;
+  for (const r of [...EXTRA_ZONES, ...ROOMS]) if (r.box && px >= r.box[0] && px <= r.box[2] && py >= r.box[1] && py <= r.box[3]) { z = r; break; }
+  const name = z ? z.name : '';
+  if (name !== lastRoom) { lastRoom = name; const w = $('where'); if (z) { w.firstElementChild.textContent = z.name; w.lastElementChild.textContent = z.info; w.classList.add('show'); } else w.classList.remove('show'); markChip(z && z.id || ''); }
+}
+
+/* minimap */
+let mmCtx, mmS;
+function buildMinimap() { const c = $('mm'); mmS = 2; mmS = 1.5; c.width = GW * mmS; c.height = GH * mmS; mmCtx = c.getContext('2d');
+  c.addEventListener('click', e => { if (mode !== 'walk' || fly) return; const r = c.getBoundingClientRect(); goTo(new THREE.Vector3(gx0 + (e.clientX - r.left) / r.width * GW * CELL, 0, gz0 + (e.clientY - r.top) / r.height * GH * CELL)); }); }
+function drawMinimap() {
+  const g = mmCtx, W = GW * mmS, Hh = GH * mmS; g.clearRect(0, 0, W, Hh); g.fillStyle = '#f3efe9'; g.fillRect(0, 0, W, Hh);
+  g.fillStyle = '#5e524c'; for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++) if (wallsOnly[j * GW + i]) g.fillRect(i * mmS, j * mmS, mmS, mmS);
+  if (route) { g.strokeStyle = 'rgba(209,18,47,.5)'; g.lineWidth = 3; g.setLineDash([6, 6]); g.beginPath(); g.moveTo((me.x - gx0) / CELL * mmS, (me.z - gz0) / CELL * mmS); for (let k = route.i; k < route.pts.length; k++) g.lineTo((route.pts[k].x - gx0) / CELL * mmS, (route.pts[k].z - gz0) / CELL * mmS); g.stroke(); g.setLineDash([]); }
+  const x = (me.x - gx0) / CELL * mmS, y = (me.z - gz0) / CELL * mmS;
+  g.save(); g.translate(x, y); g.rotate(-me.yaw); g.fillStyle = 'rgba(209,18,47,.22)'; g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, 46, -Math.PI / 2 - .6, -Math.PI / 2 + .6); g.closePath(); g.fill(); g.restore();
+  g.fillStyle = '#d1122f'; g.beginPath(); g.arc(x, y, 7, 0, 7); g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 3; g.stroke();
+}
+
+/* floor target ring */
+const ring = new THREE.Mesh(new THREE.RingGeometry(.16, .22, 40), new THREE.MeshBasicMaterial({ color: 0xd1122f, transparent: true, opacity: .9, depthWrite: false }));
+ring.rotation.x = -Math.PI / 2; ring.visible = false; ring.renderOrder = 5; scene.add(ring);
+
+/* ------------------------------------------------------------ input */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+const ptrs = new Map(); let down = null, pinch0 = 0;
+function floorHit(e) { const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(ndc, camera); const h = ray.intersectObjects(floorMeshes.filter(m => m.visible), false).find(q => q.point.y < .1); return h ? h.point : null; }
+canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); down = { x: e.clientX, y: e.clientY, t: performance.now(), moved: false }; canvas.classList.add('drag');
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a[0] - b[0], a[1] - b[1]); } });
+canvas.addEventListener('pointermove', e => {
+  const p = ptrs.get(e.pointerId); if (!p) return; const dx = e.clientX - p[0], dy = e.clientY - p[1]; p[0] = e.clientX; p[1] = e.clientY;
+  if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 7) down.moved = true;
+  if (fly) return;
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (mode === 'doll' && pinch0) { doll.dist = THREE.MathUtils.clamp(doll.dist * pinch0 / d, 8, 75); orbitUpdate(); } pinch0 = d; return; }
+  if (mode === 'doll') { doll.az -= dx * .006; doll.el = THREE.MathUtils.clamp(doll.el + dy * .005, .35, 1.5); orbitUpdate(); }
+  else { const k = (isTouch ? .0045 : .0032); me.yaw += dx * k; me.pitch = THREE.MathUtils.clamp(me.pitch + dy * k, -1.1, 1.1); if (route && down && down.moved) route.endYaw = null, route.free = true; }
+});
+const up = e => { ptrs.delete(e.pointerId); canvas.classList.remove('drag'); if (!down) return; const click = !down.moved && performance.now() - down.t < 450; down = null; if (!click || fly) return;
+  const hit = floorHit(e); if (!hit) return; if (mode === 'doll') enterAt(hit, null); else goTo(hit, null); };
+canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); down = null; });
+canvas.addEventListener('wheel', e => { e.preventDefault(); if (mode === 'doll' && !fly) { doll.dist = THREE.MathUtils.clamp(doll.dist * (1 + Math.sign(e.deltaY) * .08), 8, 75); orbitUpdate(); } }, { passive: false });
+const keys = new Set();
+addEventListener('keydown', e => { keys.add(e.code); if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault(); });
+addEventListener('keyup', e => keys.delete(e.code)); addEventListener('blur', () => keys.clear());
+
+/* ------------------------------------------------------------ time of day (07:00 -> 22:00) */
+const smt = (x, a, b) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }, mixf = (a, b, t) => a + (b - a) * t;
+let hourCur = 10, hourTarget = 10;
+const skyKeys = [[7, 0xe9d8c6], [9, 0xcfe2f3], [16.8, 0xcfe2f3], [18.6, 0xf3c79c], [19.6, 0xd98a62], [20.4, 0x39406a], [21.5, 0x0b0f1f]].map(([h, c]) => [h, new THREE.Color(c)]);
+const tMorning = new THREE.Color(1.07, 0.97, 0.88), tNoon = new THREE.Color(1, 1, 1), tSunset = new THREE.Color(1.14, 0.9, 0.74), skyC = new THREE.Color(), viewTint = new THREE.Color();
+function applyTime() {
+  const h = hourCur, n = smt(h, 19.3, 20.8), warm = h < 13 ? 1 - smt(h, 7.5, 10) : smt(h, 16.5, 19.3);
+  TOD.night.value = n; TOD.tint.value.copy(tNoon).lerp(h < 13 ? tMorning : tSunset, warm).multiplyScalar(1 - 0.18 * smt(h, 18.5, 19.8));
+  let i = 0; while (i < skyKeys.length - 2 && h > skyKeys[i + 1][0]) i++;
+  skyC.copy(skyKeys[i][1]).lerp(skyKeys[i + 1][1], Math.max(0, Math.min(1, (h - skyKeys[i][0]) / (skyKeys[i + 1][0] - skyKeys[i][0])))); scene.background = skyC;
+  scene.environmentIntensity = mixf(0.3, 0.1, n); renderer.toneMappingExposure = mixf(1.05, 1.18, n);
+  if (VIEW.ring) { viewTint.setRGB(1, 1, 1).lerp(new THREE.Color(1.0, 0.78, 0.6), warm * (h > 13 ? 1 : 0.5)); VIEW.ring.material.color.copy(viewTint); VIEW.ringN.material.opacity = n;
+    VIEW.ground.material.color.copy(VIEW.g0).multiplyScalar(1 - 0.92 * n); }
+  for (const [name, d0, d1] of [['Voilage', 0.85, 0.12], ['Spot_LED', 2.2, 3.2], ['Ampoule', 3, 4.5]]) { const m = NAMED[name]; if (m) m.emissiveIntensity = mixf(d0, d1, n) * (name === 'Voilage' ? (1 - 0.3 * warm) : 1); }
+  const mm = Math.round(h * 60), nm = h < 9.5 ? 'Matin' : h < 16.5 ? 'Journée' : h < 18.3 ? 'Après-midi' : h < 20.2 ? 'Coucher de soleil' : 'Nuit';
+  $('todLabel').textContent = String(mm / 60 | 0).padStart(2, '0') + ':' + String(mm % 60).padStart(2, '0') + ' · ' + nm;
+}
+const NAMED = {};
+const setHour = h => { hourTarget = h; $('todRange').value = (h - 7) / 15 * 1000; };
+$('todRange').addEventListener('input', () => { hourTarget = 7 + $('todRange').value / 1000 * 15; });
+$('todRange').addEventListener('change', () => $('todRange').blur());
+try { const q = +new URLSearchParams(location.search).get('h'); if (q >= 7 && q <= 22) { hourCur = q; setHour(q); } } catch (_) {}   // keeps the hour chosen on the residence page
+/* ------------------------------------------------------------ frame */
+const angLerp = (a, b, t) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * t;
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const clock = new THREE.Clock(); let mmTick = 0;
+function tick(_t, _f, fixed) {
+  const dt = fixed || Math.min(.05, clock.getDelta());
+  { const d = hourTarget - hourCur; if (Math.abs(d) > 0.002) { hourCur += d * (1 - Math.exp(-dt * 6)); applyTime(); } }
+  if (fly) {
+    fly.t += dt / fly.dur; const k = ease(Math.min(1, fly.t));
+    camera.position.lerpVectors(fly.p0, fly.p1, k); camera.quaternion.slerpQuaternions(fly.q0, fly.q1, k);
+    camera.fov = fly.f0 + (fly.f1 - fly.f0) * k; camera.updateProjectionMatrix();
+    if (fly.mid && fly.t > .72) { const f0 = camera.fov; fly.mid(); fly.mid = null; camera.fov = f0; camera.updateProjectionMatrix(); }
+    if (fly.t >= 1) { const f = fly; fly = null; f.end(); }
+  } else if (mode === 'doll') { camera.position.copy(doll.pos); camera.lookAt(doll.target); }
+  else {
+    // keyboard
+    const f = (keys.has('KeyW') || keys.has('KeyZ') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0);
+    const s = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') || keys.has('KeyQ') ? 1 : 0);
+    const turn = (keys.has('ArrowLeft') ? 1 : 0) - (keys.has('ArrowRight') ? 1 : 0);
+    if (turn) me.yaw += turn * 1.8 * dt;
+    if (f || s) { route = null; ring.visible = false; const sp = 2.4 * dt / Math.hypot(f, s), fx = -Math.sin(me.yaw), fz = -Math.cos(me.yaw);
+      const nx = me.x + (fx * f - fz * s) * sp, nz = me.z + (fz * f + fx * s) * sp; if (!isBlocked(nx, me.z)) me.x = nx; if (!isBlocked(me.x, nz)) me.z = nz; }
+    if (route) {
+      let step = 2.3 * dt; const total = route.pts.length;
+      while (step > 0 && route.i < total) { const t = route.pts[route.i], dx = t.x - me.x, dz = t.z - me.z, d = Math.hypot(dx, dz); if (d <= step) { me.x = t.x; me.z = t.z; step -= d; route.i++; } else { me.x += dx / d * step; me.z += dz / d * step; step = 0; } }
+      if (route.i < total) { if (!route.free) { const t = route.pts[route.i], last = route.i === total - 1, dl = Math.hypot(t.x - me.x, t.z - me.z);
+          const want = (last && route.endYaw !== null && dl < 1.4) ? route.endYaw : yawTo(t.x - me.x, t.z - me.z); me.yaw = angLerp(me.yaw, want, 1 - Math.exp(-dt * 3.2)); me.pitch += (-0.04 - me.pitch) * (1 - Math.exp(-dt * 3)); } }
+      else { if (route.endYaw !== null && !route.free && Math.abs(Math.atan2(Math.sin(route.endYaw - me.yaw), Math.cos(route.endYaw - me.yaw))) > .02) me.yaw = angLerp(me.yaw, route.endYaw, 1 - Math.exp(-dt * 4)); else route = null; }
+    }
+    if (ring.visible) { ring.material.opacity = route ? .9 : ring.material.opacity - dt * 2.5; if (ring.material.opacity <= 0) ring.visible = false; }
+    camera.position.set(me.x, EYE, me.z); camera.rotation.set(me.pitch, me.yaw, 0);
+    whereAmI(); if ((mmTick += dt) > .05) { mmTick = 0; drawMinimap(); }
+  }
+  renderer.render(scene, camera);
+}
+function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; if (mode === 'walk') camera.fov = innerWidth >= innerHeight ? 68 : 84; camera.updateProjectionMatrix(); if (floorMain && mode === 'doll') { const a = doll.az, e = doll.el; setDollPose(); doll.az = a; doll.el = e; orbitUpdate(); } }
+addEventListener('resize', resize); resize();
+window.__scene = scene; window.__tour = { setHour: (h, now) => { setHour(h); if (now) { hourCur = h; applyTime(); } }, me, doll, probe: (px, py) => { const v = P(px, py); return isBlocked(v.x, v.z); }, advance: sec => { for (let t = 0; t < sec; t += 1 / 30) tick(0, 0, 1 / 30); }, goRoom: id => goRoom(ROOMS.find(r => r.id === id)), enter: () => $('bMode').click(), state: () => ({ mode, route: !!route, fly: !!fly, room: lastRoom, x: me.x, z: me.z }) };
+</script>
+</body>
+</html>
