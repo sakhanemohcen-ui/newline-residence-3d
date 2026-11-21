@@ -663,7 +663,11 @@ function move(p, t, dur) { if (!dur) { camera.position.copy(p); controls.target.
 $('bAll').onclick = () => overview(false);
 let mood = 'jour'; const skyCache = {}; const cityMats = [];
 const rgbe = new RGBELoader();
-function loadSky(k) { return skyCache[k] || (skyCache[k] = new Promise((res, rej) => rgbe.load(MOODS[k].file, t => { t.mapping = THREE.EquirectangularReflectionMapping; res({ bg: t, env: pm.fromEquirectangular(t).texture }); }, undefined, rej))); }
+function loadSky(k) {        // light files: 2048x1024 JPEG for the visible sky + 512x256 HDR for the lighting (≈0.5 MB per sky instead of 5-7 MB)
+  return skyCache[k] || (skyCache[k] = Promise.all([
+    new Promise((res, rej) => new THREE.TextureLoader().load(`residence/sky_${k}_bg.jpg`, t => { t.colorSpace = THREE.SRGBColorSpace; t.mapping = THREE.EquirectangularReflectionMapping; res(t); }, undefined, rej)),
+    new Promise((res, rej) => rgbe.load(`residence/sky_${k}_env.hdr`, t => { t.mapping = THREE.EquirectangularReflectionMapping; res(pm.fromEquirectangular(t).texture); t.dispose(); }, undefined, rej))
+  ]).then(([bg, env]) => ({ bg, env }))); }
 async function setMood(k) {
   mood = k; const M = MOODS[k]; $('bNight').textContent = M.label + ' ▾';
   const sky = await loadSky(k); if (mood !== k) return;
@@ -743,8 +747,8 @@ const HILLS = (() => {
 }
 const ENV = {};
 function initTime() {
-  Promise.all(['jour', 'soir', 'nuit'].map(loadSky)).then(([d, e, n]) => {
-    domeMat.uniforms.tDay.value = d.bg; domeMat.uniforms.tEve.value = e.bg; ENV.day = d.env; ENV.eve = e.env; ENV.night = n.env;
+  loadSky('jour').then(d => {                      // only the day sky at start; evening and night skies load when the slider gets there
+    domeMat.uniforms.tDay.value = d.bg; domeMat.uniforms.tEve.value = d.bg; ENV.day = ENV.eve = ENV.night = d.env;
     scene.background = null; dome.visible = true; skyReady = true; applyTime(); });
   applyTime();
 }
@@ -757,6 +761,8 @@ function applyTime() {
   if (n > 0.5) sun.position.copy(sun.target.position).add(new THREE.Vector3(100, 200, -80));           // moonlight from high above
   const wEve = Math.max(0.5 * (1 - sm(h, 7, 9)), sm(h, 16.8, 18.6)), kN = sm(h, 19.6, 21.0);
   domeMat.uniforms.wEve.value = wEve; domeMat.uniforms.kDay.value = 1 - kN; domeMat.uniforms.kNight.value = kN;
+  if (skyReady && wEve > 0.02 && !ENV.eveLoaded) { ENV.eveLoaded = 1; loadSky('soir').then(e => { domeMat.uniforms.tEve.value = e.bg; ENV.eve = e.env; envNow = null; applyTime(); }); }
+  if (skyReady && kN > 0.02 && !ENV.nightLoaded) { ENV.nightLoaded = 1; loadSky('nuit').then(e => { ENV.night = e.env; envNow = null; applyTime(); }); }
   if (skyReady) { const env = kN > 0.5 ? ENV.night : wEve > 0.5 ? ENV.eve : ENV.day; if (env !== envNow) { scene.environment = env; envNow = env; } }
   scene.environmentIntensity = mixf(mixf(0.55, 0.8, wEve), 0.5, kN);
   { const k = Math.PI / BAKE_SKY * 0.56 * mixf(mixf(1, 0.8, w), 0.04, n); for (const m of BAKED) m.lightMapIntensity = k; }
