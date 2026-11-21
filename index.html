@@ -152,23 +152,49 @@ Promise.all([fetch('residence/residence.json?v=' + Date.now()).then(r => r.json(
     for (let k = 0; k < 9000; k++) { g.fillStyle = `rgba(${r() < 0.5 ? '60,50,40' : '255,255,255'},${r() * 0.08})`; g.fillRect(r() * 512, r() * 512, 2, 2); }
     g.fillStyle = 'rgba(90,80,70,.55)'; for (let k = 0; k <= 12; k++) { g.fillRect(k * 512 / 12 - 1, 0, 2, 512); g.fillRect(0, k * 512 / 12 - 1, 512, 2); }
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; })();
-  const facadeTex = (() => {                       // one storey (3 m) x two bays (6 m): plaster + two windows with frames and a slab line
-    const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d');
-    g.fillStyle = '#ffffff'; g.fillRect(0, 0, 256, 128);
-    for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(0,0,0,${Math.random() * 0.05})`; g.fillRect(Math.random() * 256, Math.random() * 128, 2, 2); }
-    g.fillStyle = 'rgba(0,0,0,0.10)'; g.fillRect(0, 118, 256, 10);
-    for (const x of [28, 156]) { g.fillStyle = '#6b737c'; g.fillRect(x, 30, 72, 66); g.fillStyle = 'rgba(255,255,255,0.14)'; g.fillRect(x + 4, 34, 30, 58);
-      g.strokeStyle = '#e9e4da'; g.lineWidth = 3; g.strokeRect(x, 30, 72, 66); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(x - 4, 96, 80, 6); }
-    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; })();
+  // city façades: one tile = 8 bays x 4 storeys (24 x 12 m) of an Algiers apartment block — windows with frames and curtains, closed shutters,
+  // stacked balconies with railings, AC units, rain streaks; the night texture uses the same layout so lit windows match
+  const CITY = (() => {
+    const W = 1024, H = 512, BW = 128, FH = 128; let sd = 57; const r = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+    const day = document.createElement('canvas'), night = document.createElement('canvas'); day.width = night.width = W; day.height = night.height = H;
+    const g = day.getContext('2d'), gn = night.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H); gn.fillStyle = '#000'; gn.fillRect(0, 0, W, H);
+    for (let i = 0; i < 9000; i++) { g.fillStyle = `rgba(${r() < 0.5 ? '0,0,0' : '255,255,255'},${r() * 0.05})`; g.fillRect(r() * W, r() * H, 2, 2); }
+    const balc = [...Array(8)].map(() => r() < 0.35), shutterCol = ['#d9d2c4', '#8a6a4a', '#5b7a8a', '#e8e2d6'][(r() * 4) | 0];
+    for (let f = 0; f < 4; f++) {
+      const y = f * FH; g.fillStyle = 'rgba(0,0,0,0.09)'; g.fillRect(0, y + FH - 8, W, 8);                          // slab line
+      for (let b = 0; b < 8; b++) {
+        const x = b * BW, bal = balc[b];
+        const wx = x + (bal ? 30 : 36), ww = bal ? 68 : 56, wy = y + (bal ? 14 : 30), wh = bal ? 98 : 64;       // balcony doors are taller
+        const k = r(), lit = r() < 0.42, warm = 0.6 + r() * 0.4;
+        if (bal) { g.fillStyle = 'rgba(0,0,0,0.16)'; g.fillRect(x + 16, y + 8, 96, 112); }                            // balcony recess shadow
+        if (k < 0.22) {                                                                                               // closed shutters (persiennes)
+          g.fillStyle = shutterCol; g.fillRect(wx, wy, ww, wh); g.fillStyle = 'rgba(0,0,0,0.22)'; for (let q = 3; q < wh; q += 5) g.fillRect(wx, wy + q, ww, 1.5);
+        } else {
+          g.fillStyle = '#4f5964'; g.fillRect(wx, wy, ww, wh); g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(wx + 3, wy + 3, ww * 0.4, wh - 6);   // glass + sky reflection
+          if (k < 0.62) { g.fillStyle = 'rgba(245,240,230,0.85)'; const cw = ww * (0.3 + r() * 0.4); g.fillRect(r() < 0.5 ? wx : wx + ww - cw, wy, cw, wh); }   // curtain
+          if (k > 0.85) { g.fillStyle = shutterCol; g.fillRect(wx, wy, ww, wh * (0.3 + r() * 0.4)); }              // half-lowered roller shutter
+          if (lit) { gn.fillStyle = `rgb(${255 * warm | 0},${200 * warm | 0},${130 * warm | 0})`; gn.fillRect(wx + 2, wy + 2, ww - 4, wh - 4); }
+        }
+        g.strokeStyle = '#e4ded3'; g.lineWidth = 3; g.strokeRect(wx, wy, ww, wh);
+        if (bal) { g.fillStyle = 'rgba(70,70,72,0.85)'; g.fillRect(x + 16, y + 70, 96, 3); for (let q = x + 18; q < x + 112; q += 7) g.fillRect(q, y + 70, 1.5, 42);   // railing
+          g.fillStyle = '#efeae0'; g.fillRect(x + 14, y + 112, 100, 8); }                                               // balcony slab edge
+        else { g.fillStyle = 'rgba(0,0,0,0.22)'; g.fillRect(wx - 4, wy + wh, ww + 8, 5); }                             // sill
+        if (r() < 0.22) { const ax = r() < 0.5 ? wx - 26 : wx + ww + 4; g.fillStyle = '#f4f4f2'; g.fillRect(ax, wy + 34, 22, 16); g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(ax + 3, wy + 37, 16, 2); g.fillRect(ax + 3, wy + 41, 16, 2); }   // AC unit
+        if (r() < 0.35) { const sx = wx + r() * ww, gr = g.createLinearGradient(0, wy + wh, 0, wy + wh + 60); gr.addColorStop(0, 'rgba(60,55,45,0.16)'); gr.addColorStop(1, 'rgba(60,55,45,0)'); g.fillStyle = gr; g.fillRect(sx, wy + wh, 6, 60); }   // rain streak
+      }
+    }
+    const mk = (c, srgb) => { const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; };
+    return { day: mk(day), night: mk(night) }; })();
+  const facadeTex = CITY.day;
   function boxUV(mesh, su, sv, plainTop = false) {            // world-space UVs: tops use x/z, walls use (horizontal, height); su/sv = metres per tile
     const gm = mesh.geometry, P = gm.attributes.position, N = gm.attributes.normal; if (!N) return;
     mesh.updateMatrixWorld(true); const M = mesh.matrixWorld, NM = new THREE.Matrix3().getNormalMatrix(M);
     const uv = new Float32Array(P.count * 2), v = new THREE.Vector3(), n = new THREE.Vector3();
     for (let i = 0; i < P.count; i++) {
       v.fromBufferAttribute(P, i).applyMatrix4(M); n.fromBufferAttribute(N, i).applyMatrix3(NM).normalize();
-      if (Math.abs(n.y) > 0.6) { if (plainTop) { uv[2 * i] = 0.05; uv[2 * i + 1] = 0.5; } else { uv[2 * i] = v.x / su; uv[2 * i + 1] = v.z / su; } }   // roofs: a plain plaster spot of the façade texture
-      else if (Math.abs(n.x) > Math.abs(n.z)) { uv[2 * i] = v.z / sv; uv[2 * i + 1] = v.y / 3; }
-      else { uv[2 * i] = v.x / sv; uv[2 * i + 1] = v.y / 3; }
+      if (Math.abs(n.y) > 0.6) { if (plainTop) { uv[2 * i] = 0.004; uv[2 * i + 1] = 0.995; } else { uv[2 * i] = v.x / su; uv[2 * i + 1] = v.z / su; } }   // roofs: a plain plaster spot of the façade texture
+      else if (Math.abs(n.x) > Math.abs(n.z)) { uv[2 * i] = v.z / sv; uv[2 * i + 1] = v.y / (plainTop ? 12 : 3); }
+      else { uv[2 * i] = v.x / sv; uv[2 * i + 1] = v.y / (plainTop ? 12 : 3); }
     }
     gm.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   }
@@ -192,14 +218,10 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
     Champ: m => { m.map = tSol; m.color.set(0x8a5a3c); return [m, 10, 10]; },
     Trottoir: m => { m.map = tPave; m.color.set(0xd6d2ca); m.roughness = 0.9; return [m, 6, 6]; },
     Herbe: m => { m.map = tSol; m.color.set(0x6f8f45); return [m, 12, 12]; },
-    Ville_a: m => { m.map = facadeTex; return [m, 30, 6]; }, Ville_b: m => { m.map = facadeTex; return [m, 30, 6]; },
-    Ville_c: m => { m.map = facadeTex; return [m, 30, 6]; }, Brique: m => { m.map = facadeTex; return [m, 30, 6]; },
+    Ville_a: m => { m.map = facadeTex; return [m, 30, 24]; }, Ville_b: m => { m.map = facadeTex; return [m, 30, 24]; },
+    Ville_c: m => { m.map = facadeTex; return [m, 30, 24]; }, Brique: m => { m.map = facadeTex; return [m, 30, 24]; },
   };
-  const nightTex = (() => {                       // same grid as facadeTex: about 40 % of the windows lit warm, the rest black
-    const c = document.createElement('canvas'); c.width = 1024; c.height = 512; const g = c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, 1024, 512);
-    for (let by = 0; by < 4; by++) for (let bx = 0; bx < 4; bx++) for (const x of [28, 156]) if (Math.random() < 0.4) {
-      const w = 0.55 + Math.random() * 0.45; g.fillStyle = `rgb(${255 * w | 0},${205 * w | 0},${140 * w | 0})`; g.fillRect(bx * 256 + x + 3, by * 128 + 33, 66, 60); }
-    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.repeat.set(0.25, 0.25); return t; })();
+  const nightTex = CITY.night;
   const texDone = new Map();
   // ---- real trees: Poly Haven trees rendered as sprites, two crossed planes per tree (instanced)
   if (R.trees && R.trees.length) {
