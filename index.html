@@ -17,7 +17,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-actio
 #brand h1{margin:2px 0 0;font-size:20px;font-weight:700}
 #brand p{margin:2px 0 0;font-size:12px;color:var(--mute)}
 #top{position:fixed;right:16px;top:16px;display:flex;gap:8px;z-index:5;flex-wrap:wrap;justify-content:flex-end}
-@media (max-width:900px){#top{top:calc(78px + env(safe-area-inset-top));left:16px;right:auto;justify-content:flex-start}}
+@media (max-width:900px){#brand p{display:none}#top{top:calc(78px + env(safe-area-inset-top));left:16px;right:auto;justify-content:flex-start}}
 button,.btn{font:inherit;border:0;cursor:pointer}
 .btn{padding:11px 16px;border-radius:999px;font-size:13px;font-weight:600;background:rgba(255,255,255,.95);color:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.12);text-decoration:none;display:inline-block}
 .btn.dark{background:var(--ink);color:#fff}.btn.red{background:var(--red);color:#fff}
@@ -401,7 +401,7 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
       if (!o.isMesh || !o.geometry.attributes.uv1) return; const tg = tagOf(o); if (!LMS[tg]) return;
       const key = o.material.uuid + tg; let m = clones.get(key);
       if (!m) { const src = o.material; m = src.clone(); m.onBeforeCompile = src.onBeforeCompile; if (src.customProgramCacheKey) m.customProgramCacheKey = src.customProgramCacheKey;
-        m.lightMap = LMS[tg]; m.lightMapIntensity = 0; m.envMapIntensity = 0.45; BAKED.push(m); clones.set(key, m);
+        m.lightMap = LMS[tg]; m.lightMapIntensity = 0; m.envMapIntensity = 0.12; BAKED.push(m); clones.set(key, m);
         const gl_ = glow.find(g => g[0] === src); if (gl_) glow.push([m, gl_[1], gl_[2], gl_[3], gl_[4]]);
         if (cityMats.includes(src)) cityMats.push(m); }
       o.material = m;
@@ -594,8 +594,8 @@ function applyTime() {
   domeMat.uniforms.wEve.value = wEve; domeMat.uniforms.kDay.value = 1 - kN; domeMat.uniforms.kNight.value = kN;
   if (skyReady) { const env = kN > 0.5 ? ENV.night : wEve > 0.5 ? ENV.eve : ENV.day; if (env !== envNow) { scene.environment = env; envNow = env; } }
   scene.environmentIntensity = mixf(mixf(0.55, 0.8, wEve), 0.5, kN);
-  { const k = Math.PI / BAKE_SKY * 0.32 * mixf(mixf(1, 0.8, w), 0.04, n); for (const m of BAKED) m.lightMapIntensity = k; }
-  keyCol(fogKeys, h, scene.fog.color); domeMat.uniforms.uHaze.value.copy(scene.fog.color); hemi.intensity = mixf(0.25, 0.12, n);
+  { const k = Math.PI / BAKE_SKY * 0.56 * mixf(mixf(1, 0.8, w), 0.04, n); for (const m of BAKED) m.lightMapIntensity = k; }
+  keyCol(fogKeys, h, scene.fog.color); domeMat.uniforms.uHaze.value.copy(scene.fog.color); hemi.intensity = mixf(0.12, 0.1, n);
   renderer.toneMappingExposure = mixf(mixf(0.72, 0.86, w * dayK), 1.3, kN);
   if (Math.abs(g - glowK) > 0.002) { glowK = g;
     for (const m of cityMats) { m.emissive.set(0xffffff); m.emissiveIntensity = 1.6 * g; }
@@ -658,7 +658,7 @@ addEventListener('resize', resize);
 function freeGPU() { try { scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { for (const k in o.material) { const v = o.material[k]; if (v && v.isTexture) v.dispose(); } o.material.dispose(); } }); renderer.dispose(); renderer.forceContextLoss(); } catch (_) {} }
 addEventListener('pagehide', freeGPU);
 document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (a && !a.target && a.href.indexOf('wa.me') < 0) { e.preventDefault(); freeGPU(); location.href = a.href; } }, true);
-window.__res = { invalidate, setHour: (h, now) => { setHour(h); if (now) { hourCur = h; applyTime(); } }, sun, hemi, renderer, camera, controls, R: () => R, showLevel, overview, showInfo, state: () => ({ level, floors: floors.children.length, clip: clip.constant }), step: s => { for (let t = 0; t < s; t += 1 / 30) { anim && (anim.t = 1); tick(); } } };
+window.__res = { BAKED, invalidate, setHour: (h, now) => { setHour(h); if (now) { hourCur = h; applyTime(); } }, sun, hemi, renderer, camera, controls, R: () => R, showLevel, overview, showInfo, state: () => ({ level, floors: floors.children.length, clip: clip.constant }), step: s => { for (let t = 0; t < s; t += 1 / 30) { anim && (anim.t = 1); tick(); } } };
 </script>
 </body>
 </html>
