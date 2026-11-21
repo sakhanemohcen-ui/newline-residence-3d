@@ -84,6 +84,7 @@ button{font:inherit;border:0;cursor:pointer}
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/+esm';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js/+esm';
+import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/DRACOLoader.js/+esm';
 import { RoomEnvironment } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/environments/RoomEnvironment.js/+esm';
 
 const $ = id => document.getElementById(id);
@@ -282,7 +283,7 @@ fetch(BASE + 'apt.json').then(r => { if (!r.ok) throw new Error('appartement inc
   return Promise.all([
   texLoad(BASE + (LITE ? 'lm_A_2k.jpg' : 'lm_A.jpg')), texLoad(BASE + 'lm_B.jpg'), Promise.resolve(null),
   fetch(BASE + 'solids.json').then(r => r.json()),
-  new Promise((res, rej) => new GLTFLoader().load(BASE + 'model.glb', res, e => { if (e.total) bar.style.width = (100 * e.loaded / e.total) + '%'; }, rej)),
+  new Promise((res, rej) => new GLTFLoader().setDRACOLoader(new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/libs/draco/gltf/')).load(BASE + 'model.glb', res, e => { if (e.total) bar.style.width = (100 * e.loaded / e.total) + '%'; }, rej)),
 ]); }).then(([la, lb, lav, solids, gltf]) => {
   LM.A = la; LM.B = lb; LM.Avide = lav; SOLIDS = solids; TOD.nightA.value = la; TOD.nightB.value = lb;   // until the night maps arrive
   texLoad(BASE + 'lm_A_nuit.jpg').then(t => { if (!leaving) { TOD.nightA.value = t; LM.An = t; } }).catch(() => {});
