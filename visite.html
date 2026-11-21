@@ -214,7 +214,7 @@ const tagOf = o => { for (let q = o; q; q = q.parent) if (q.userData && q.userDa
 const bar = $('bar').firstElementChild;
 let cfg0 = null, viewRing = null;
 /* time of day: shared uniforms for all baked materials (day map <-> lamps-only night map, warm tint at dawn and dusk) */
-const TOD = { night: { value: 0 }, tint: { value: new THREE.Color(1, 1, 1) }, gainN: { value: 1.25 }, nightA: { value: null }, nightB: { value: null } };
+const TOD = { night: { value: 0 }, tint: { value: new THREE.Color(1, 1, 1) }, gainN: { value: 0.95 }, nightA: { value: null }, nightB: { value: null } };
 function todMat(m, atlas) {
   m.onBeforeCompile = sh => {
     sh.uniforms.uNight = TOD.night; sh.uniforms.uTint = TOD.tint; sh.uniforms.uGainN = TOD.gainN; sh.uniforms.lightMapNight = atlas === 'A' ? TOD.nightA : TOD.nightB;

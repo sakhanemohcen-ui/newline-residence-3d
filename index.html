@@ -17,6 +17,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-actio
 #brand h1{margin:2px 0 0;font-size:20px;font-weight:700}
 #brand p{margin:2px 0 0;font-size:12px;color:var(--mute)}
 #top{position:fixed;right:16px;top:16px;display:flex;gap:8px;z-index:5;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:900px){#top{top:calc(78px + env(safe-area-inset-top));left:16px;right:auto;justify-content:flex-start}}
 button,.btn{font:inherit;border:0;cursor:pointer}
 .btn{padding:11px 16px;border-radius:999px;font-size:13px;font-weight:600;background:rgba(255,255,255,.95);color:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.12);text-decoration:none;display:inline-block}
 .btn.dark{background:var(--ink);color:#fff}.btn.red{background:var(--red);color:#fff}
@@ -128,6 +129,7 @@ const clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e5);
 const glow = [];   // [material, day emissive, night emissive]
 const C = new THREE.Matrix4().set(1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1), Ci = C.clone().invert();   // Blender Z-up -> three Y-up
 const ANIM = [];
+const RC = new THREE.Vector3();   // centre of the whole residence (A, B, C)
 const BAKED = [], BAKE_SKY = 0.25;   // materials lit by the baked skylight (soft shadows + bounce light from Blender); the page scales them by the hour
 const once = f => f(0);   // still scene: things that used to move are placed once, so the page only redraws when the view changes
 const TAGS = [ { t: 'Bloc A', p: [57.4, 64, -92.3] }, { t: 'Bloc B', p: [30, 64, -66] }, { t: 'Bloc C', p: [71, 60, -35.2] },
@@ -492,7 +494,8 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
   floorTpl.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; const a = (o.material.name.match(/^Sol_(F4[ABCD])$/) || [])[1]; if (a) o.userData.apt = a; } });
   sun.target.position.set(R.centre[0], 0, -R.centre[1]); sun.target.updateMatrixWorld();   // sun and its shadow box follow the residence
   { const mid = keys => { const v = new THREE.Vector3(); for (const k of keys) v.add(new THREE.Vector3(16, 11.1, 0).applyMatrix4(new THREE.Matrix4().fromArray(R.floor_instances[k]))); v.divideScalar(keys.length); return [v.x, R.height + 9, -v.y]; };
-    TAGS[0].p = mid(['A_sud', 'A_nord']); TAGS[1].p = mid(['B_sud', 'B_nord']); }      // labels sit above the real block centres
+    TAGS[0].p = mid(['A_sud', 'A_nord']); TAGS[1].p = mid(['B_sud', 'B_nord']);
+    RC.set((TAGS[0].p[0] + TAGS[1].p[0] + TAGS[2].p[0]) / 3, 0, (TAGS[0].p[2] + TAGS[1].p[2] + TAGS[2].p[2]) / 3); }      // labels sit above the real block centres
   buildLevels(); resize(); overview(true); initTime();
   $('load').classList.add('done'); renderer.setAnimationLoop(tick);
 }).catch(e => showErr('Chargement impossible : ' + (e.message || e)));
@@ -525,13 +528,12 @@ function showLevel(n) {
 function overview(instant) {
   level = null; clip.constant = 1e5; floors.clear(); hideInfo(); invalidate(true);
   for (const b of $('levels').querySelectorAll('button')) b.classList.remove('on');
-  const b = new THREE.Vector3(R.centre[0], 0, -R.centre[1]);
-  const c = b.clone().add(new THREE.Vector3(-300, 0, -160)), p = b.clone().add(new THREE.Vector3(260, 170, 160));
+  const c = RC.clone().setY(22), p = c.clone().add(new THREE.Vector3(330, 200, 190));   // orbit pivots on the middle of the residence (blocks A, B, C), so every side can be seen
   move(p, c, instant ? 0 : 1.2); hint(isTouch ? 'Glissez pour tourner · choisissez un étage en bas' : 'Glissez pour tourner · choisissez un étage à gauche');
 }
 function fly(z) {
-  const c = new THREE.Vector3(R.centre[0], z, -R.centre[1]); const off = camera.position.clone().sub(controls.target).setY(0).normalize();
-  move(c.clone().add(off.multiplyScalar(70)).add(new THREE.Vector3(0, 75, 0)), c, 1.2);
+  const c = RC.clone().setY(z); const off = camera.position.clone().sub(controls.target).setY(0).normalize();
+  move(c.clone().add(off.multiplyScalar(95)).add(new THREE.Vector3(0, 90, 0)), c, 1.2);
 }
 let anim = null;
 function move(p, t, dur) { if (!dur) { camera.position.copy(p); controls.target.copy(t); controls.update(); return; } anim = { t: 0, dur, p0: camera.position.clone(), t0: controls.target.clone(), p1: p, t1: t }; }
