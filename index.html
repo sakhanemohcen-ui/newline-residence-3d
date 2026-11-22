@@ -84,7 +84,7 @@ button,.btn{font:inherit;border:0;cursor:pointer}
   <div class="ticks"><span style="left:0">Matin</span><span style="left:40%;transform:translateX(-50%)">Midi</span><span style="left:81%;transform:translateX(-50%)">Coucher</span><span style="right:0">Nuit</span></div></div>
 <div id="hint">Glissez pour tourner · choisissez un étage à gauche</div>
 <div id="tip"></div><div id="err"></div>
-<div id="credit">Démo · bâtiment d'après les plans et vidéos Sopimem · environnement © contributeurs OpenStreetMap · v25</div>
+<div id="credit">Démo · bâtiment d'après les plans et vidéos Sopimem · environnement © contributeurs OpenStreetMap · v27</div>
 <div id="load"><h2>NEWLINE</h2><p>Chargement de la résidence</p><div id="bar"><i></i></div><div id="pct">0 %</div></div>
 <button id="todPill" class="btn" aria-label="Heure">🕑 <span id="todPillT">10:00</span></button>
 
@@ -124,7 +124,7 @@ scene.background = DAY.sky.clone(); scene.fog = new THREE.Fog(DAY.fog.clone(), 3
 const camera = new THREE.PerspectiveCamera(40, 1, 2, 15000);   // near 2 m: better depth precision for thin ground layers
 const hemi = new THREE.HemisphereLight(0xffffff, 0xb8ad9c, DAY.hemi); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff0dc, DAY.sun); sun.position.set(-120, 220, 160); scene.add(sun, sun.target);
-if (renderer.shadowMap.enabled) { sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); const s = sun.shadow.camera; s.left = -160; s.right = 160; s.top = 160; s.bottom = -160; s.near = 10; s.far = 700; sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.6; }
+if (renderer.shadowMap.enabled) { sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); const s = sun.shadow.camera; s.left = -160; s.right = 160; s.top = 160; s.bottom = -160; s.near = 10; s.far = 700; sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.05; }
 // soft contact shadows (ambient occlusion) under balconies, in corners and at the foot of walls: the "baked" look. Computers only; phones keep the plain render.
 let composer = null, gtao = null;
 const LIVE_AO = false;   // the soft shadows are baked now; a second live pass made one frame differ during stop-and-go turning (flicker)
@@ -149,14 +149,15 @@ const TAGS = [ { t: 'Bloc A', p: [57.4, 64, -92.3] }, { t: 'Bloc B', p: [30, 64,
 function drawTags() { const el = document.getElementById('tags'); if (!el) return; if (!el.children.length) for (const g of TAGS) { const d = document.createElement('div'); d.className = 'tag' + (g.land ? ' land' : ''); d.textContent = g.t; el.appendChild(d); g.el = d; }
   const v = new THREE.Vector3(); for (const g of TAGS) { v.set(...g.p).project(camera); const on = level === null && v.z < 1 && Math.abs(v.x) < 0.95 && Math.abs(v.y) < 0.92;
     g.el.style.display = on ? '' : 'none'; if (on) { g.el.style.left = ((v.x + 1) / 2 * innerWidth) + 'px'; g.el.style.top = ((1 - v.y) / 2 * innerHeight - 18) + 'px'; } } }   // per-frame animations (palms swaying, traffic, water)
+let RES2 = null, SHOPTEX = null;
 let R, FL, site, floorTpl, floors = new THREE.Group(); scene.add(floors);
 const bar = $('bar').firstElementChild;
 const draco = new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/libs/draco/gltf/');   // site.glb is Draco-compressed (3.7 MB)
 const PROG = {};          // one percentage for all model files together
 const load = url => new Promise((res, rej) => new GLTFLoader().setDRACOLoader(draco).load(url, res, e => { if (e.total) { PROG[url] = [e.loaded, e.total];
   let l = 0, t = 0; for (const k in PROG) { l += PROG[k][0]; t += PROG[k][1]; } const p = Math.min(99, Math.round(100 * l / t)); bar.style.width = p + '%'; $('pct').textContent = p + ' %'; } }, rej));
-Promise.all([fetch('residence/residence.json?v=' + Date.now()).then(r => r.json()), fetch('residence/floor_AB.json?v=' + Date.now()).then(r => r.json()), load('residence/site.glb?v=' + Date.now()), load('residence/floor_AB.glb?v=' + Date.now())]).then(([r, fl, g1, g2]) => {
-  R = r; FL = fl; site = g1.scene; floorTpl = g2.scene; scene.add(site);
+Promise.all([fetch('residence/residence.json?v=' + Date.now()).then(r => r.json()), fetch('residence/floor_AB.json?v=' + Date.now()).then(r => r.json()), load('residence/site.glb?v=' + Date.now()), load('residence/floor_AB.glb?v=' + Date.now()), load('residence/residence_v2.glb?v=' + Date.now()), fetch('residence/residence_v2.json?v=' + Date.now()).then(r => r.json()).catch(() => ({ shrubs: [] }))]).then(([r, fl, g1, g2, g3, r2]) => {
+  R = r; FL = fl; site = g1.scene; floorTpl = g2.scene; scene.add(site); RES2 = g3.scene; R.shrubs = (R.shrubs || []).concat((r2.shrubs || []).map((q, i) => [q[0], q[1], q[2], q[3] * 1.15, q[4] && i % 3 === 0 ? 1 : 0]));   // detailed residence (Blender proof-shot model) + its balcony plants
   // ---- textures for the surroundings: ground, asphalt, soil, and window grids on the city blocks
   const tl = new THREE.TextureLoader();
   const repTex = (url, srgb = true) => { const t = tl.load(url); t.wrapS = t.wrapT = THREE.RepeatWrapping; if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; };
@@ -420,7 +421,7 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
       g.fillStyle = '#ffffff'; g.font = '600 34px Montserrat, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, 256, 38);
       const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.anisotropy = 8; return t; };
     const SIGNS = { Enseigne_a: signTex(['#b8162a', '#7c0d1b'], 'PÂTISSERIE · CAFÉ'), Enseigne_b: signTex(['#1e4e8c', '#122f57'], 'OPTIQUE'), Enseigne_c: signTex(['#d39a1d', '#9a6b0e'], 'BOULANGERIE'), Enseigne_d: signTex(['#1f7a45', '#11482a'], 'PHARMACIE') };
-    const tDay = atlas(false), tLit = atlas(true), tShop = shops();
+    const tDay = atlas(false), tLit = atlas(true), tShop = shops(); SHOPTEX = tShop;
     const tClad = (() => { const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d'); let s2 = 29; const r = () => { s2 = (s2 * 16807) % 2147483647; return s2 / 2147483647; };
       for (let j = 0; j < 4; j++) for (let i = 0; i < 2; i++) { const v = 52 + r() * 10; g.fillStyle = `rgb(${v},${v + 1},${v + 3})`; g.fillRect(i * 256, j * 128, 256, 128); }   // 1.2 x 0.6 m panels, slightly varied
       for (let k = 0; k < 6000; k++) { g.fillStyle = `rgba(${r() < 0.5 ? '0,0,0' : '255,255,255'},${r() * 0.06})`; g.fillRect(r() * 512, r() * 512, 2, 2); }
@@ -630,6 +631,77 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
         }
     });
   }
+  // ---- the detailed residence (rounded balcony slabs, glass balustrades, framed windows, rooms, lit shops, penthouses) with web materials
+  {
+    const RM = { Enduit_blanc: [0xdcd6cb, 0.42], Bardage: [0x45484d, 0.5], Alu_noir: [0x111113, 0.32, 0.8], Piece: [0xc4ae93, 0.85], Plafond: [0xd8d5cf, 0.8], Bandeau: [0x111112, 0.4, 0.4],
+      Jardiniere: [0x232325, 0.5], Terre: [0x2a1d14, 1], Deck: [0x7a5233, 0.7], Boutique_mur: [0xd8cfc2, 0.6], Boutique_sol: [0xcfcac2, 0.2], Produits: [0x8c7466, 0.6], Produits2: [0x3a5577, 0.6], Produits3: [0xbfae8c, 0.6] };
+    const EM = { LED: [0xffd6a0, 0, 3], Boutique_lum: [0xffeccc, 2, 3], Enseigne: [0xfff4e4, 0.6, 2], Signe_rouge: [0xff1a30, 0, 3] };
+    const cache = new Map();
+    const PW = 160, PH = 256, NX = 8, NY = 4;                       // one pane = 1.2 m wide x one storey (3.2 m); glass spans 0.05-2.7 m above the floor
+    const roomAtlas = lit => { const c = document.createElement('canvas'); c.width = PW * NX; c.height = PH * NY; const g = c.getContext('2d'); let s0 = 37; const r = () => { s0 = (s0 * 16807) % 2147483647; return s0 / 2147483647; };
+      for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
+        const x = i * PW, y = j * PH, on = lit ? r() < 0.55 : false;
+        const gr = g.createLinearGradient(0, y, 0, y + PH);           // deep room: bright ceiling near the window, darker towards the back and the floor
+        if (on) { gr.addColorStop(0, '#f2d3a4'); gr.addColorStop(0.45, '#b98d62'); gr.addColorStop(1, '#5a4330'); }
+        else { const t = ['#3d3a36', '#36383b', '#423b33', '#2f2d2b'][(r() * 4) | 0]; gr.addColorStop(0, '#6a665f'); gr.addColorStop(0.35, t); gr.addColorStop(1, '#1f1d1b'); }
+        g.fillStyle = gr; g.fillRect(x, y, PW, PH);
+        g.fillStyle = on ? 'rgba(255,236,200,.5)' : 'rgba(255,255,255,.06)'; g.fillRect(x + PW * 0.15, y + 10, PW * 0.7, 6);              // ceiling light / soffit
+        if (r() < 0.6) { g.fillStyle = on ? 'rgba(70,45,28,.6)' : 'rgba(0,0,0,.45)'; const fw = 40 + r() * 70; g.fillRect(x + r() * (PW - fw), y + PH * 0.68, fw, PH * 0.2); }   // sofa, sideboard, bed
+        if (r() < 0.35) { g.fillStyle = on ? 'rgba(255,240,215,.85)' : 'rgba(210,200,185,.25)'; g.fillRect(x + 20 + r() * 90, y + PH * 0.3, 26, 20); }     // picture or lamp
+        const k = r();
+        if (k < 0.32) { for (let q = 0; q < PW; q += 5) { g.fillStyle = `rgba(246,243,236,${0.5 + 0.2 * Math.sin(q)})`; g.fillRect(x + q, y, 5, PH); } }            // sheer voile, pleated
+        else if (k < 0.58) { const sw = 24 + r() * 30; g.fillStyle = '#d9ccb4'; g.fillRect(x, y, sw, PH); g.fillRect(x + PW - sw * (r() < 0.5 ? 1 : 0.5), y, sw, PH);   // linen drapes
+          g.fillStyle = 'rgba(0,0,0,.14)'; for (let q = 0; q < sw; q += 6) g.fillRect(x + q, y, 2, PH); }
+        else if (k < 0.72) { const bh = PH * (0.25 + r() * 0.6); for (let q = 0; q < bh; q += 6) { g.fillStyle = q % 12 ? 'rgba(226,223,216,.95)' : 'rgba(165,161,154,.95)'; g.fillRect(x, y + q, PW, 5); } }   // blinds
+      }
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; };
+    const tRoom = roomAtlas(false), tRoomLit = roomAtlas(true);
+    const worldUV = (mesh, su, y0, sv) => { const gm = mesh.geometry, P = gm.attributes.position, N = gm.attributes.normal; mesh.updateMatrixWorld(true);
+      const M = mesh.matrixWorld, NM = new THREE.Matrix3().getNormalMatrix(M), uv = new Float32Array(P.count * 2), v = new THREE.Vector3(), nn = new THREE.Vector3();
+      for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).applyMatrix4(M); nn.fromBufferAttribute(N, i).applyMatrix3(NM).normalize();
+        const h = Math.abs(nn.x) > Math.abs(nn.z) ? v.z : v.x; uv[2 * i] = h / su; uv[2 * i + 1] = (v.y - y0) / sv; }
+      gm.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); };
+    // world-space noise for concrete: soft blotches and fine grain, so the plaster is never perfectly uniform
+    const concrete = (m, amt) => { m.onBeforeCompile = sh => {
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;').replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+        varying vec3 vWP; float hh(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+        float vn3(vec3 p) { vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+          return mix(mix(mix(hh(i), hh(i + vec3(1,0,0)), f.x), mix(hh(i + vec3(0,1,0)), hh(i + vec3(1,1,0)), f.x), f.y), mix(mix(hh(i + vec3(0,0,1)), hh(i + vec3(1,0,1)), f.x), mix(hh(i + vec3(0,1,1)), hh(i + vec3(1,1,1)), f.x), f.y), f.z); }`)
+        .replace('#include <color_fragment>', `#include <color_fragment>
+          float nB = vn3(vWP * 0.35) * 0.6 + vn3(vWP * 1.7) * 0.3 + vn3(vWP * 9.0) * 0.1;
+          diffuseColor.rgb *= 1.0 - ${amt.toFixed(3)} * (nB - 0.5) * 2.0;`); }; m.customProgramCacheKey = () => 'concrete' + amt; };
+    const LMR = new THREE.TextureLoader().load('residence/lm_res' + (isTouch ? '_2k' : '') + '.jpg?v=2', () => invalidate(true)); LMR.flipY = false; LMR.colorSpace = THREE.SRGBColorSpace; LMR.channel = 1; LMR.anisotropy = 4;
+    RES2.traverse(o => {
+      if (!o.isMesh) return; const n = o.material.name; let m = cache.get(n);
+      if (!m) {
+        if (n === 'Verre') { m = new THREE.MeshPhysicalMaterial({ name: n, map: tRoom, roughness: 0.55, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.1,
+            emissive: 0xffffff, emissiveMap: tRoomLit, emissiveIntensity: 0.12 });
+          glow.push([m, new THREE.Color(0xffffff), 0.12, new THREE.Color(0xffffff), 1.1]);
+          m.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vWY;').replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWY = (modelMatrix * vec4(transformed, 1.0)).y;');
+            sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vWY;\nuniform sampler2D tShop;')
+              .replace('#include <map_fragment>', '#include <map_fragment>\n vec4 shopC = texture2D(tShop, vec2(vMapUv.x * 9.6 / 21.0, (vWY - 0.4) / 4.1)); float isShop = 1.0 - step(5.6, vWY);\n diffuseColor.rgb = mix(diffuseColor.rgb, shopC.rgb * 0.9, isShop);')
+              .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance = mix(totalEmissiveRadiance, shopC.rgb * 0.45, isShop);');
+            sh.uniforms.tShop = { value: SHOPTEX }; };   // shop windows: lit shop interiors (the building core hides the modelled ones)
+          m.customProgramCacheKey = () => 'roomglass'; }
+        else if (n === 'Verre_garde') m = new THREE.MeshPhysicalMaterial({ name: n, color: 0x9fb9c2, roughness: 0.03, metalness: 0.1, transparent: true, opacity: 0.22, depthWrite: false });
+        else if (n === 'Voilage') m = new THREE.MeshStandardMaterial({ name: n, color: 0xf3efe6, roughness: 0.9, transparent: true, opacity: 0.8 });
+        else if (n === 'Piscine') m = new THREE.MeshStandardMaterial({ name: n, color: 0x2a9cc4, roughness: 0.05 });
+        else if (EM[n]) { const [c, d, ni] = EM[n]; m = new THREE.MeshStandardMaterial({ name: n, color: n === 'Signe_rouge' ? 0x9e0d22 : 0xffffff, emissive: c, emissiveIntensity: d, roughness: 0.4 });
+          glow.push([m, new THREE.Color(c), d, new THREE.Color(c), ni]); }
+        else if (RM[n]) { const [c, r, mt] = RM[n]; m = new THREE.MeshStandardMaterial({ name: n, color: c, roughness: r, metalness: mt || 0, vertexColors: !!o.geometry.attributes.color });   // baked contact shadows (COLOR_0)
+          if (n === 'Enduit_blanc') concrete(m, 0.05); if (n === 'Bardage') concrete(m, 0.09); }
+        else m = o.material;
+        if (n === 'Piece') { m.emissive = new THREE.Color(0x000000); glow.push([m, new THREE.Color(0x000000), 0, new THREE.Color(0xffc88a), 0.35]); }   // rooms glow warm at night
+        m.clippingPlanes = [clip]; m.clipShadows = true; if (!m.transparent) m.side = THREE.DoubleSide;
+        cache.set(n, m);
+      }
+      if (false && o.geometry.attributes.uv1 && !m.transparent && !m.lightMap) { m.lightMap = LMR; m.lightMapIntensity = 0; m.envMapIntensity = 0.12; BAKED.push(m); m.needsUpdate = true; }   // baked sky light, scaled by the hour
+      if (n === 'Verre') worldUV(o, 1.2 * NX, 6.05, 3.2 * NY);
+      o.material = m; o.castShadow = !m.transparent && n !== 'Verre'; o.receiveShadow = true;
+    });
+    scene.add(RES2);
+  }
   floorTpl.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; const a = (o.material.name.match(/^Sol_(F4[ABCD])$/) || [])[1]; if (a) o.userData.apt = a; } });
   sun.target.position.set(R.centre[0], 0, -R.centre[1]); sun.target.updateMatrixWorld();   // sun and its shadow box follow the residence
   { const mid = keys => { const v = new THREE.Vector3(); for (const k of keys) v.add(new THREE.Vector3(16, 11.1, 0).applyMatrix4(new THREE.Matrix4().fromArray(R.floor_instances[k]))); v.divideScalar(keys.length); return [v.x, R.height + 9, -v.y]; };
@@ -659,6 +731,13 @@ function showLevel(n) {
       const Mb = new THREE.Matrix4().fromArray(arr), Tz = new THREE.Matrix4().makeTranslation(0, 0, L.z + 0.02);
       const g = floorTpl.clone(true); g.matrixAutoUpdate = false; g.matrix.copy(C).multiply(Tz).multiply(Mb).multiply(Ci);
       g.userData.half = key; g.traverse(o => { if (o.isMesh) o.userData.half = key; }); floors.add(g);
+    }
+    if (L.z < 50) {                                                       // block C has no plan yet: a clean slab closes its cut
+      const ca = -0.2301, sa = 0.9732, c6 = 0.9945, s6 = -0.1045, pts = [];
+      const W = (x, y) => { const X = -x * c6 - y * s6 - 1.4, Y = -x * s6 + y * c6; return new THREE.Vector2(76 + X * ca - Y * sa, -(62 + X * sa + Y * ca)); };
+      pts.push(W(-0.4, 0), W(48.6, 0)); for (let k = 0; k <= 12; k++) { const t = -Math.PI / 2 + Math.PI * k / 12; pts.push(W(48.6 + 11.1 * Math.cos(t), 11.1 + 11.1 * Math.sin(t))); } pts.push(W(48.6, 22.2), W(-0.4, 22.2));
+      const g = new THREE.ShapeGeometry(new THREE.Shape(pts)).rotateX(Math.PI / 2);
+      const slab = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0xe9e5dd, roughness: 0.9, side: THREE.DoubleSide })); slab.position.y = L.z + 1.2; slab.receiveShadow = true; floors.add(slab);
     }
     hint('Touchez un appartement pour voir ses pièces');
   } else hint('Penthouses avec piscine privée · plan détaillé à venir');
@@ -850,7 +929,7 @@ addEventListener('resize', resize);
 function freeGPU() { try { scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { for (const k in o.material) { const v = o.material[k]; if (v && v.isTexture) v.dispose(); } o.material.dispose(); } }); renderer.dispose(); renderer.forceContextLoss(); } catch (_) {} }
 addEventListener('pagehide', freeGPU);
 document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (a && !a.target && a.href.indexOf('wa.me') < 0) { e.preventDefault(); freeGPU(); location.href = a.href; } }, true);
-window.__res = { BAKED, invalidate, setHour: (h, now) => { setHour(h); if (now) { hourCur = h; applyTime(); } }, sun, hemi, renderer, camera, controls, R: () => R, showLevel, overview, showInfo, state: () => ({ level, floors: floors.children.length, clip: clip.constant }), step: s => { for (let t = 0; t < s; t += 1 / 30) { anim && (anim.t = 1); tick(); } } };
+window.__res = { res2: () => RES2, BAKED, invalidate, setHour: (h, now) => { setHour(h); if (now) { hourCur = h; applyTime(); } }, sun, hemi, renderer, camera, controls, R: () => R, showLevel, overview, showInfo, state: () => ({ level, floors: floors.children.length, clip: clip.constant }), step: s => { for (let t = 0; t < s; t += 1 / 30) { anim && (anim.t = 1); tick(); } } };
 </script>
 </body>
 </html>
