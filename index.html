@@ -17,7 +17,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-actio
 #brand h1{margin:2px 0 0;font-size:20px;font-weight:700}
 #brand p{margin:2px 0 0;font-size:12px;color:var(--mute)}
 #top{position:fixed;right:16px;top:16px;display:flex;gap:8px;z-index:5;flex-wrap:wrap;justify-content:flex-end}
-@media (max-width:900px){#brand p{display:none}#top{top:calc(78px + env(safe-area-inset-top));left:16px;right:auto;justify-content:flex-start}}
+@media (max-width:900px){#brand p{display:none}#top{top:calc(84px + env(safe-area-inset-top));left:16px;right:auto;justify-content:flex-start}}
 button,.btn{font:inherit;border:0;cursor:pointer}
 .btn{padding:11px 16px;border-radius:999px;font-size:13px;font-weight:600;background:rgba(255,255,255,.95);color:var(--ink);box-shadow:0 6px 20px rgba(0,0,0,.12);text-decoration:none;display:inline-block}
 .btn.dark{background:var(--ink);color:#fff}.btn.red{background:var(--red);color:#fff}
@@ -25,6 +25,8 @@ button,.btn{font:inherit;border:0;cursor:pointer}
 #levels::-webkit-scrollbar{display:none}
 #levels button{padding:6px 12px;border-radius:10px;background:transparent;font-size:12px;font-weight:600;text-align:left;white-space:nowrap;color:var(--ink)}
 #levels button:hover{background:#eef0f3}#levels button.on{background:var(--ink);color:#fff}
+#levels .seg{display:flex;gap:2px;background:#eef0f3;border-radius:10px;padding:2px;margin:2px 2px 6px}
+#levels .seg button{flex:1;padding:6px 8px;text-align:center;font-size:11.5px}
 #levels .h{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);padding:4px 12px 2px}
 #info{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:6;width:min(340px,calc(100vw - 32px));padding:16px 18px;display:none}
 #info.show{display:block}
@@ -34,6 +36,9 @@ button,.btn{font:inherit;border:0;cursor:pointer}
 #info table{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:12.5px}
 #info td{padding:5px 0;border-bottom:1px solid #eceef1}#info td:last-child{text-align:right;font-weight:600}
 #info .row{display:flex;gap:8px}#info .row .btn{flex:1;text-align:center}
+#info .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;color:#fff;margin:6px 6px 0 0}
+#info .price{font-size:15px;font-weight:700;margin-top:6px}#info .note{font-size:12px;color:var(--mute);margin-top:4px}
+#info .fine{font-size:10.5px;color:var(--mute);margin-top:8px;line-height:1.35}#info .btn.wa{background:#1f9d55;color:#fff}
 #info .x{position:absolute;right:10px;top:8px;background:none;font-size:20px;color:var(--mute)}
 #hint{position:fixed;left:50%;bottom:calc(104px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:4;padding:10px 16px;font-size:12.5px;font-weight:500;background:rgba(22,24,28,.8);color:#fff;border-radius:999px;pointer-events:none;transition:opacity .4s;text-align:center;max-width:90vw}
 #tip{position:fixed;z-index:7;pointer-events:none;padding:6px 10px;font-size:12px;font-weight:600;border-radius:8px;background:rgba(22,24,28,.85);color:#fff;display:none;white-space:nowrap}
@@ -41,11 +46,17 @@ button,.btn{font:inherit;border:0;cursor:pointer}
 #load.done{opacity:0;pointer-events:none}#load h2{font-size:34px;font-weight:600;letter-spacing:.12em;margin:0}
 #load p{font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:.6;margin:10px 0 22px}
 #bar{width:220px;height:2px;background:#333}#bar i{display:block;height:100%;width:0;background:var(--red);transition:width .2s}
+#legend{position:fixed;left:16px;bottom:30px;z-index:5;padding:8px 12px;display:none;grid-template-columns:auto auto;gap:4px 14px;font-size:11.5px;font-weight:600;align-items:center}
+#legend.show{display:grid}#legend .wide{grid-column:1/-1;color:var(--mute);font-weight:500}
+@media (min-width:641px) and (max-width:900px){#legend{left:auto;right:16px;bottom:auto;top:calc(130px + env(safe-area-inset-top))}}#legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+#levels button .n{font-size:10px;font-weight:700;color:#2e9e5b;margin-left:6px}#levels button.on .n{color:#9fe3b8}
+@media (max-width:640px){#legend{left:8px;right:8px;bottom:auto;top:calc(128px + env(safe-area-inset-top));justify-content:center;gap:8px;font-size:10.5px;padding:6px 8px}#legend.show{display:flex;flex-wrap:wrap}#legend .wide{flex-basis:100%;text-align:center}}
+#tod.open ~ #hint{visibility:hidden}
 #credit{position:fixed;left:8px;bottom:4px;font-size:10px;color:#556;z-index:3}
 #err{position:fixed;inset:auto 16px 16px 16px;z-index:30;background:#7a1020;color:#fff;padding:12px 16px;border-radius:12px;font-size:13px;display:none}
 @media (max-width:640px){#brand p{display:none}#brand h1{font-size:16px}.btn{padding:9px 12px;font-size:12px}
  #levels{top:auto;bottom:calc(12px + env(safe-area-inset-bottom));left:8px;right:8px;transform:none;flex-direction:row;overflow-x:auto;max-height:none}
- #levels .h{display:none}#info{bottom:calc(70px + env(safe-area-inset-bottom))}#hint{bottom:calc(76px + env(safe-area-inset-bottom))}}
+ #levels .h{display:none}#levels .seg{margin:0 4px 0 0;flex:none;position:sticky;left:0;z-index:1;box-shadow:6px 0 8px rgba(255,255,255,.9)}#levels .seg button{padding:10px 10px}#info{bottom:calc(70px + env(safe-area-inset-bottom))}#hint{bottom:calc(76px + env(safe-area-inset-bottom))}}
 #tags{position:fixed;inset:0;pointer-events:none;z-index:4}
 #tags .tag{position:absolute;transform:translate(-50%,-100%);font:600 12px/1 Montserrat,system-ui,sans-serif;color:#fff;background:rgba(20,24,32,.78);padding:7px 10px;border-radius:8px;white-space:nowrap;letter-spacing:.02em}
 #tags .tag::after{content:'';position:absolute;left:50%;top:100%;width:1px;height:18px;background:rgba(255,255,255,.75)}
@@ -65,6 +76,19 @@ button,.btn{font:inherit;border:0;cursor:pointer}
   #tags .tag{font-size:10.5px;padding:5px 8px}
   #bNight{display:none}
 }
+/* Phase 5 D6: phone fixes (last, so they win) */
+body.card #hint{display:none}
+@media (max-width:640px){#credit{bottom:calc(70px + env(safe-area-inset-bottom));left:10px;font-size:9.5px;max-width:60vw}#credit .long{display:none}
+ #hint{bottom:calc(122px + env(safe-area-inset-bottom))}#info{max-height:calc(100dvh - 270px);min-height:0;overflow-y:auto}
+ body.card #todPill,body.card #hint{display:none}}
+@media (max-height:520px) and (min-width:641px){                   /* phones held sideways: short and wide */
+ #brand{padding:8px 12px}#brand h1{font-size:16px}#brand p{display:none}
+ #top{top:16px;right:16px;left:auto;justify-content:flex-end}
+ #levels{top:84px;bottom:26px;transform:none;max-height:none}
+ #legend{top:70px;right:16px;left:auto;bottom:auto}
+ #info{bottom:12px;right:12px;max-height:calc(100vh - 80px);overflow-y:auto}
+ body.card #tod,body.card #legend,body.card #hint{display:none}}
+@media (min-width:641px) and (max-width:1199px) and (min-height:521px){#info{bottom:calc(108px + env(safe-area-inset-bottom));max-height:calc(100vh - 190px);overflow-y:auto}}   /* card above the time bar */
 </style>
 </head>
 <body>
@@ -77,14 +101,15 @@ button,.btn{font:inherit;border:0;cursor:pointer}
 </div>
 <div id="levels" class="card"></div>
 <div id="info" class="card"><button class="x" id="infoX">×</button><div class="k" id="iK"></div><h2 id="iT"></h2><div id="iS"></div><table id="iR"></table>
-  <div class="row"><a class="btn dark" id="iGo" href="#">Visiter en 3D</a></div></div>
+  <div class="row"><a class="btn dark" id="iGo" href="#">Visiter en 3D</a><a class="btn wa" id="iWa" href="#" target="_blank" rel="noopener">WhatsApp</a></div><div class="fine" id="iF"></div></div>
+<div id="legend" class="card"><span><i style="background:#2e9e5b"></i>Disponible</span><span><i style="background:#e59a2b"></i>Réservé</span><span><i style="background:#c63a3a"></i>Vendu</span><span><i style="background:#d9d6cf"></i>À renseigner</span></div>
 <div id="tags"></div>
 <div id="tod"><div class="row"><span>Heure</span><b id="todLabel"></b></div>
   <input id="todRange" type="range" min="0" max="1000" value="200" aria-label="Heure de la journée">
   <div class="ticks"><span style="left:0">Matin</span><span style="left:40%;transform:translateX(-50%)">Midi</span><span style="left:81%;transform:translateX(-50%)">Coucher</span><span style="right:0">Nuit</span></div></div>
 <div id="hint">Glissez pour tourner · choisissez un étage à gauche</div>
 <div id="tip"></div><div id="err"></div>
-<div id="credit">Démo · bâtiment d'après les plans et vidéos Sopimem · environnement © contributeurs OpenStreetMap + vues drone Sopimem · v29</div>
+<div id="credit"><span class="long">Démo · bâtiment d'après les plans et vidéos Sopimem · environnement </span>© contributeurs OpenStreetMap + vues drone Sopimem · v30</div>
 <div id="load"><h2>NEWLINE</h2><p>Chargement de la résidence</p><div id="bar"><i></i></div><div id="pct">0 %</div></div>
 <button id="todPill" class="btn" aria-label="Heure">🕑 <span id="todPillT">10:00</span></button>
 
@@ -710,26 +735,61 @@ vGP = (modelMatrix * vec4(transformed, 1.0)).xz;`);
   $('load').classList.add('done'); renderer.setAnimationLoop(tick);
 }).catch(e => showErr('Chargement impossible : ' + (e.message || e)));
 
+/* ------------------------------------------------ apartment list (Phase 5): residence/lots.csv, edited in Excel by Sopimem.
+   One line per apartment: reference;bloc;demi_bloc;etage;type;surface_m2;statut;prix_da;remarque. Nothing is invented here:
+   an empty surface falls back to the surface measured on the plan (marked ≈), an empty price shows "Prix sur demande". */
+const LOTS = new Map();                                                   // key "A_sud|5|F4A" -> lot
+const STATUS = { disponible: 'dispo', dispo: 'dispo', libre: 'dispo', reserve: 'reserve', 'option': 'reserve', vendu: 'vendu' };
+function lotKey(half, floor, apt) { return half + '|' + floor + '|' + apt; }
+function parseCSVLine(s) { const out = []; let cur = '', q = false;
+  for (let i = 0; i < s.length; i++) { const ch = s[i];
+    if (q) { if (ch === '"') { if (s[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true; else if (ch === ';') { out.push(cur); cur = ''; } else cur += ch; }
+  out.push(cur); return out.map(v => v.trim()); }
+function loadLots() {
+  return fetch('residence/lots.csv?v=' + Date.now()).then(r => r.ok ? r.text() : '').then(txt => {
+    LOTS.clear(); const lines = txt.replace(/^﻿/, '').split(/\r?\n/).filter(l => l.trim()); if (!lines.length) return LOTS;
+    const head = parseCSVLine(lines[0]).map(h => h.toLowerCase()); const col = n => head.indexOf(n); let bad = 0;
+    for (const line of lines.slice(1)) { const v = parseCSVLine(line), g = n => (col(n) >= 0 ? v[col(n)] || '' : '');
+      const bloc = g('bloc').toUpperCase(), half = bloc + '_' + g('demi_bloc').toLowerCase(), floor = parseInt(g('etage'), 10), type = g('type').toUpperCase();
+      if (!/^[AB]_(sud|nord)$/.test(half) || !(floor >= 1 && floor <= 16) || !/^F4[ABCD]$/.test(type)) { bad++; continue; }
+      const st = g('statut').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+      const surf = parseFloat(g('surface_m2').replace(',', '.'));
+      LOTS.set(lotKey(half, floor, type), { ref: g('reference') || `${bloc}-${half.slice(2, 3).toUpperCase()}-${String(floor).padStart(2, '0')}-${type}`,
+        bloc, half, floor, type, surface: surf > 0 ? surf : null, status: STATUS[st] || 'inconnu', price: g('prix_da'), note: g('remarque') });
+    }
+    if (bad) console.warn('lots.csv:', bad, 'ligne(s) ignorée(s) (bloc, demi_bloc, etage ou type incorrect)');
+    return LOTS; }).catch(() => LOTS);
+}
+const lotsReady = loadLots();
+
 /* ------------------------------------------------ levels */
 const HALF = { A_sud: 'Bloc A · sud', A_nord: 'Bloc A · nord', B_sud: 'Bloc B · sud', B_nord: 'Bloc B · nord' };
 let level = null;
 function buildLevels() {
-  const el = $('levels'); el.innerHTML = '<div class="h">Étages</div>';
+  const el = $('levels'); el.innerHTML = '<div class="seg" id="seg"><button data-b="">Tous</button><button data-b="A">Bloc A</button><button data-b="B">Bloc B</button></div><div class="h">Étages</div>';
+  for (const b of el.querySelectorAll('#seg button')) b.onclick = () => setBlock(b.dataset.b || null);
+  buildGhosts(); setBlock(null, true);
   for (const L of [...R.levels].reverse()) {
     if (L.n === 0) continue;
-    const b = document.createElement('button'); b.textContent = L.n === 16 ? 'Penthouse' : (L.n === 1 ? '1er étage' : L.n + 'e étage'); b.dataset.n = L.n;
-    b.onclick = () => showLevel(L.n); el.appendChild(b);
+    const b = document.createElement('button'); b.innerHTML = `<span>${L.n === 16 ? 'Penthouse' : (L.n === 1 ? '1er étage' : L.n + 'e étage')}</span><span class="n"></span>`; b.dataset.n = L.n;
+    b.onclick = () => { showBand(null); showLevel(L.n); }; b.onmouseenter = () => showBand(L.n); b.onmouseleave = () => showBand(null); el.appendChild(b);
   }
 }
 function showLevel(n) {
-  level = n; for (const b of $('levels').querySelectorAll('button')) b.classList.toggle('on', +b.dataset.n === n);
+  level = n; for (const b of $('levels').querySelectorAll('button[data-n]')) b.classList.toggle('on', +b.dataset.n === n);
+  setLegend(); $('legend').classList.toggle('show', n <= 15);
   const L = R.levels.find(l => l.n === n); floors.clear(); hideInfo();
   clip.constant = L.z + 1.25; invalidate(true);                                               // cut the building 1.25 m above this floor
   if (n <= 15) {
     for (const [key, arr] of Object.entries(R.floor_instances)) {
+      if (selBlock && key[0] !== selBlock) {                              // a block is chosen: only its floor plans; the other block's cut gets a plain slab
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(34, 25.8, 0.3).translate(16, 11.1, 0), capMat); cap.matrixAutoUpdate = false;
+        cap.matrix.copy(C).multiply(new THREE.Matrix4().makeTranslation(0, 0, L.z + 1.1)).multiply(new THREE.Matrix4().fromArray(arr)); floors.add(cap); continue; }
       const Mb = new THREE.Matrix4().fromArray(arr), Tz = new THREE.Matrix4().makeTranslation(0, 0, L.z + 0.02);
       const g = floorTpl.clone(true); g.matrixAutoUpdate = false; g.matrix.copy(C).multiply(Tz).multiply(Mb).multiply(Ci);
-      g.userData.half = key; g.traverse(o => { if (o.isMesh) o.userData.half = key; }); floors.add(g);
+      g.userData.half = key; g.traverse(o => { if (o.isMesh) { o.userData.half = key; if (o.userData.apt && hasStatus()) { const lot = LOTS.get(lotKey(key, n, o.userData.apt)); o.material = statusMat(o.material, lot ? lot.status : 'inconnu'); } } }); floors.add(g);
+      floors.add(floorRing(arr, L.z + 1.1));                              // red outline of the chosen floor at the cut
     }
     if (L.z < 50) {                                                       // block C has no plan yet: a clean slab closes its cut
       const ca = -0.2301, sa = 0.9732, c6 = 0.9945, s6 = -0.1045, pts = [];
@@ -743,14 +803,85 @@ function showLevel(n) {
   fly(L.z);
 }
 function overview(instant) {
-  level = null; clip.constant = 1e5; floors.clear(); hideInfo(); invalidate(true);
-  for (const b of $('levels').querySelectorAll('button')) b.classList.remove('on');
+  level = null; clip.constant = 1e5; floors.clear(); hideInfo(); setBlock(null, true); $('legend').classList.remove('show'); invalidate(true);
+  for (const b of $('levels').querySelectorAll('button[data-n]')) b.classList.remove('on');
   const c = RC.clone().setY(22), p = c.clone().add(new THREE.Vector3(330, 200, 190));   // orbit pivots on the middle of the residence (blocks A, B, C), so every side can be seen
   move(p, c, instant ? 0 : 1.2); hint(isTouch ? 'Glissez pour tourner · choisissez un étage en bas' : 'Glissez pour tourner · choisissez un étage à gauche');
 }
 function fly(z) {
-  const c = RC.clone().setY(z); const off = camera.position.clone().sub(controls.target).setY(0).normalize();
-  move(c.clone().add(off.multiplyScalar(95)).add(new THREE.Vector3(0, 90, 0)), c, 1.2);
+  const c = blockCentre().setY(z); const off = camera.position.clone().sub(controls.target).setY(0).normalize();
+  move(c.clone().add(off.multiplyScalar(selBlock ? 70 : 95)).add(new THREE.Vector3(0, selBlock ? 70 : 90, 0)), c, 1.2);
+}
+/* Phase 5 D2: choose block A or B. The other blocks are veiled by light frosted volumes (the residence model is one mesh per
+   material, so a veil is cleaner than recolouring), the camera frames the chosen block, floor plans show only that block. */
+let selBlock = null; const ghosts = { A: [], B: [], C: [] }; const capMat = new THREE.MeshStandardMaterial({ color: 0xe9e5dd, roughness: 0.9 });
+function blockCentre() { const i = selBlock === 'A' ? 0 : selBlock === 'B' ? 1 : -1; return i < 0 ? RC.clone() : new THREE.Vector3(TAGS[i].p[0], 0, TAGS[i].p[2]); }
+function buildGhosts() {
+  if (ghosts.C.length) return;
+  const mat = new THREE.MeshBasicMaterial({ color: 0xf3f4f6, transparent: true, opacity: 0.68, depthWrite: false, clippingPlanes: [clip] });
+  const H = R.height + 3.5;
+  for (const [key, arr] of Object.entries(R.floor_instances)) {                // half-blocks: 32 x 22.2 m footprint (+ balconies)
+    const g = new THREE.BoxGeometry(34, 25.8, H).translate(16, 11.1, H / 2);
+    const m = new THREE.Mesh(g, mat); m.matrixAutoUpdate = false; m.matrix.copy(C).multiply(new THREE.Matrix4().fromArray(arr)); m.visible = false; m.renderOrder = 2;
+    scene.add(m); ghosts[key[0]].push(m);
+  }
+  { const ca = -0.2301, sa = 0.9732, c6 = 0.9945, s6 = -0.1045, pts = [], e = 1.8;   // block C: same outline as its floor slab, a little wider
+    const W = (x, y) => { const X = -x * c6 - y * s6 - 1.4, Y = -x * s6 + y * c6; return new THREE.Vector2(76 + X * ca - Y * sa, -(62 + X * sa + Y * ca)); };
+    pts.push(W(-0.4, -e), W(48.6, -e)); for (let k = 0; k <= 12; k++) { const t = -Math.PI / 2 + Math.PI * k / 12; pts.push(W(48.6 + (11.1 + e) * Math.cos(t), 11.1 + (11.1 + e) * Math.sin(t))); } pts.push(W(48.6, 22.2 + e), W(-0.4, 22.2 + e));
+    const HC = 6 + 15 * 3.2 + 3;
+    const g = new THREE.ExtrudeGeometry(new THREE.Shape(pts), { depth: HC, bevelEnabled: false }).rotateX(Math.PI / 2);
+    const m = new THREE.Mesh(g, mat); m.position.y = HC; m.visible = false; m.renderOrder = 2; scene.add(m); ghosts.C.push(m); }
+}
+/* Phase 5 D3: hovering a floor in the list lights that storey on the façade (blocks A and B, or the chosen block);
+   the chosen floor keeps a red outline along its cut edge. */
+const floorBandMat = new THREE.MeshBasicMaterial({ color: 0xd1122f, transparent: true, opacity: 0.38, depthWrite: false, clippingPlanes: [clip] });
+const bandLine = new THREE.LineBasicMaterial({ color: 0xd1122f, clippingPlanes: [clip] });
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xd1122f });
+const band = new THREE.Group(); scene.add(band);
+function halvesShown() { return Object.entries(R.floor_instances).filter(([k]) => !selBlock || k[0] === selBlock); }
+function showBand(n) {
+  for (const o of band.children) o.geometry.dispose(); band.clear();
+  if (n !== null && n !== undefined) { const L = R.levels.find(l => l.n === n);
+    for (const [, arr] of halvesShown()) {
+      const g = new THREE.BoxGeometry(34.4, 26.2, L.h - 0.2).translate(16, 11.1, L.z + L.h / 2);
+      const M = new THREE.Matrix4().copy(C).multiply(new THREE.Matrix4().fromArray(arr));
+      const m = new THREE.Mesh(g, floorBandMat); m.matrixAutoUpdate = false; m.matrix.copy(M); m.renderOrder = 3; band.add(m);
+      const e = new THREE.LineSegments(new THREE.EdgesGeometry(g), bandLine); e.matrixAutoUpdate = false; e.matrix.copy(M); band.add(e);
+    } }
+  invalidate();
+}
+function floorRing(arr, z) {                                                // four thin red strips around a half-block, just above the cut
+  const grp = new THREE.Group(), W = 34.4, D = 26.2, t = 0.35, h = 0.3, x0 = 16 - W / 2, y0 = 11.1 - D / 2;
+  for (const [x, y, w, d] of [[x0, y0, W, t], [x0, y0 + D - t, W, t], [x0, y0, t, D], [x0 + W - t, y0, t, D]]) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, d, h).translate(x + w / 2, y + d / 2, z + h / 2), ringMat); m.matrixAutoUpdate = false;
+    m.matrix.copy(C).multiply(new THREE.Matrix4().fromArray(arr)); grp.add(m); }
+  return grp;
+}
+/* Phase 5 D4: apartments coloured by their status in lots.csv; the floor list shows how many are available */
+const STATUS_COL = { dispo: 0x2e9e5b, reserve: 0xe59a2b, vendu: 0xc63a3a, inconnu: 0xd9d6cf }; const stMats = {};
+function statusMat(base, st) { const k = base.uuid + st; if (!stMats[k]) { const m = base.clone(); m.color.set(STATUS_COL[st] || STATUS_COL.inconnu); stMats[k] = m; } return stMats[k]; }
+function hasStatus() { for (const l of LOTS.values()) if (l.status !== 'inconnu') return true; return false; }   // no status filled yet: keep the type colours
+function setLegend() {
+  const it = (c, t) => `<span><i style="background:${c}"></i>${t}</span>`;
+  $('legend').innerHTML = hasStatus() ? it('#2e9e5b', 'Disponible') + it('#e59a2b', 'Réservé') + it('#c63a3a', 'Vendu') + it('#d9d6cf', 'À renseigner')
+    : Object.entries(FL.apartments).map(([k, a]) => it(a.color, k)).join('') + '<span class="wide">Statuts à renseigner</span>';
+}
+function updateCounts() {
+  for (const b of $('levels').querySelectorAll('button[data-n]')) { const n = +b.dataset.n; let d = 0;
+    for (const lot of LOTS.values()) if (lot.floor === n && lot.status === 'dispo' && (!selBlock || lot.bloc === selBlock)) d++;
+    b.querySelector('.n').textContent = d ? d + ' dispo' : ''; }
+}
+lotsReady.then(() => { if (R && $('levels').children.length) { updateCounts(); if (level !== null) showLevel(level); } });
+function setBlock(b, quiet) {
+  selBlock = b; for (const x of $('levels').querySelectorAll('#seg button')) x.classList.toggle('on', (x.dataset.b || null) === b); updateCounts();
+  for (const k of ['A', 'B', 'C']) for (const m of ghosts[k]) m.visible = !!b && k !== b;
+  for (const t of TAGS.slice(0, 3)) if (t.el) t.el.style.opacity = !b || t.t === 'Bloc ' + b ? '' : '0.35';
+  invalidate(true); if (quiet) return;
+  if (level !== null) { showLevel(level); return; }
+  if (!b) { overview(false); return; }
+  const c = blockCentre().setY(26), off = camera.position.clone().sub(controls.target).setY(0).normalize();
+  move(c.clone().add(off.multiplyScalar(150)).add(new THREE.Vector3(0, 95, 0)), c, 1.2);
+  hint('Bloc ' + b + ' · choisissez un étage');
 }
 let anim = null;
 function move(p, t, dur) { if (!dur) { camera.position.copy(p); controls.target.copy(t); controls.update(); return; } anim = { t: 0, dur, p0: camera.position.clone(), t0: controls.target.clone(), p1: p, t1: t }; }
@@ -923,17 +1054,31 @@ function pick(e) {
 canvas.addEventListener('pointerdown', e => downAt = [e.clientX, e.clientY]);
 canvas.addEventListener('pointerup', e => { if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) return; const p = pick(e); if (p) showInfo(p.apt, p.half); });
 canvas.addEventListener('pointermove', e => { const t = $('tip'); if (isTouch || level === null) { t.style.display = 'none'; return; } const p = pick(e);
-  if (p) { t.textContent = `${p.apt} · ${FL.apartments[p.apt].area.toFixed(0)} m²`; t.style.left = e.clientX + 14 + 'px'; t.style.top = e.clientY + 12 + 'px'; t.style.display = 'block'; canvas.style.cursor = 'pointer'; }
+  if (p) { const lot = lotFor(p.half, p.apt); t.textContent = `${lot.ref} · ${lot.surface ? lot.surface.toLocaleString('fr-FR') : '≈ ' + FL.apartments[p.apt].area.toFixed(0)} m² · ${(ST_LABEL[lot.status] || ST_LABEL.inconnu)[0]}`; t.style.left = e.clientX + 14 + 'px'; t.style.top = e.clientY + 12 + 'px'; t.style.display = 'block'; canvas.style.cursor = 'pointer'; }
   else { t.style.display = 'none'; canvas.style.cursor = ''; } });
+/* Phase 5 D5: the card reads the apartment's line in lots.csv (reference, official surface, status, price, note); nothing is invented */
+const ST_LABEL = { dispo: ['Disponible', '#2e9e5b'], reserve: ['Réservé', '#e59a2b'], vendu: ['Vendu', '#c63a3a'], inconnu: ['Statut à renseigner', '#8a8f98'] };
+const WA_NUM = '213560939151';                                             // Sopimem's public WhatsApp number (same as "Prendre rendez-vous")
+function fmtPrice(p) { if (!p) return 'Prix sur demande'; const n = Number(p.replace(/[\s ]/g, '').replace(',', '.'));
+  return isFinite(n) && n > 0 ? Math.round(n).toLocaleString('fr-FR') + ' DA' : p.charAt(0).toUpperCase() + p.slice(1); }
+function lotFor(half, apt) { return LOTS.get(lotKey(half, level, apt)) || { ref: `${half[0]}-${half.slice(2, 3).toUpperCase()}-${String(level).padStart(2, '0')}-${apt}`, surface: null, status: 'inconnu', price: '', note: '' }; }
 function showInfo(apt, half) {
-  const A = FL.apartments[apt], L = R.levels.find(l => l.n === level);
-  $('iK').textContent = `${HALF[half] || ''} · ${L.label}`; $('iT').textContent = `Appartement ${apt}`;
-  $('iS').innerHTML = `<span class="sw" style="background:${A.color}"></span>F4 · ≈ ${A.area.toFixed(0)} m² · statut à renseigner`;
+  const A = FL.apartments[apt], L = R.levels.find(l => l.n === level), lot = lotFor(half, apt), [stT, stC] = ST_LABEL[lot.status] || ST_LABEL.inconnu;
+  const where = `Bloc ${half[0]} · ${half.endsWith('sud') ? 'partie sud' : 'partie nord'} · ${L.n === 1 ? '1er étage' : L.n + 'e étage'}`;
+  $('iK').textContent = where; $('iT').textContent = `Appartement ${lot.ref}`;
+  const surf = lot.surface ? `${lot.surface.toLocaleString('fr-FR')} m²` : `≈ ${A.area.toFixed(0)} m² (mesuré sur plan)`;
+  $('iS').innerHTML = `<span class="sw" style="background:${A.color}"></span>F4 (type ${apt}) · ${surf}<br><span class="pill" style="background:${stC}">${stT}</span>`
+    + `<div class="price">${lot.status === 'vendu' ? '' : fmtPrice(lot.price)}</div>` + (lot.note ? `<div class="note">${lot.note.replace(/[<>&]/g, '')}</div>` : '');
+  const msg = lot.status === 'vendu' ? `Bonjour, l'appartement ${lot.ref} (${where}) de la résidence Newline est indiqué vendu. Avez-vous un appartement F4 similaire disponible ?`
+    : `Bonjour, je suis intéressé(e) par l'appartement ${lot.ref} (${where}, F4) de la résidence Newline à Bab Ezzouar. Pouvez-vous me donner plus d'informations ?`;
+  $('iWa').href = `https://wa.me/${WA_NUM}?text=${encodeURIComponent(msg)}`; $('iWa').textContent = lot.status === 'vendu' ? 'Autres disponibilités' : 'WhatsApp';
+  document.body.classList.add('card');
+  $('iF').textContent = (lot.surface ? '' : 'Surface indicative, mesurée sur le plan. ') + (half.endsWith('nord') ? 'Cette partie du bloc est la symétrie du plan : la visite 3D montre le plan non inversé.' : '');
   const main = A.rooms.filter(r => !/^(Hall|Dégagement|WC|Buanderie)$/.test(r.name)).slice(0, 7);
   $('iR').innerHTML = main.map(r => `<tr><td>${r.name}</td><td>${r.w.toFixed(2).replace('.', ',')} × ${r.d.toFixed(2).replace('.', ',')} m</td></tr>`).join('');
   $('iGo').href = 'visite.html?apt=' + apt.toLowerCase() + '&h=' + hourTarget.toFixed(2); $('info').classList.add('show');
 }
-function hideInfo() { $('info').classList.remove('show'); }
+function hideInfo() { $('info').classList.remove('show'); document.body.classList.remove('card'); }
 $('infoX').onclick = hideInfo;
 let hintT; function hint(t) { const h = $('hint'); h.textContent = t; h.style.opacity = 1; clearTimeout(hintT); hintT = setTimeout(() => h.style.opacity = 0, 5000); }
 
@@ -961,7 +1106,7 @@ addEventListener('resize', resize);
 function freeGPU() { try { scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { for (const k in o.material) { const v = o.material[k]; if (v && v.isTexture) v.dispose(); } o.material.dispose(); } }); renderer.dispose(); renderer.forceContextLoss(); } catch (_) {} }
 addEventListener('pagehide', freeGPU);
 document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (a && !a.target && a.href.indexOf('wa.me') < 0) { e.preventDefault(); freeGPU(); location.href = a.href; } }, true);
-window.__res = { res2: () => RES2, BAKED, invalidate, setHour: (h, now) => { setHour(h); if (now) { hourCur = h; applyTime(); } }, sun, hemi, renderer, camera, controls, R: () => R, showLevel, overview, showInfo, state: () => ({ level, floors: floors.children.length, clip: clip.constant }), step: s => { for (let t = 0; t < s; t += 1 / 30) { anim && (anim.t = 1); tick(); } } };
+window.__res = { showInfoTest: (a, h) => showInfo(a, h), updateCounts, showBand, setBlock, sel: () => selBlock, lots: () => LOTS, lotsReady, reloadLots: loadLots, res2: () => RES2, BAKED, invalidate, setHour: (h, now) => { setHour(h); if (now) { hourCur = h; applyTime(); } }, sun, hemi, renderer, camera, controls, R: () => R, showLevel, overview, showInfo, state: () => ({ level, floors: floors.children.length, clip: clip.constant }), step: s => { for (let t = 0; t < s; t += 1 / 30) { anim && (anim.t = 1); tick(); } } };
 </script>
 </body>
 </html>
