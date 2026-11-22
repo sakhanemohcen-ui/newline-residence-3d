@@ -84,7 +84,7 @@ button,.btn{font:inherit;border:0;cursor:pointer}
   <div class="ticks"><span style="left:0">Matin</span><span style="left:40%;transform:translateX(-50%)">Midi</span><span style="left:81%;transform:translateX(-50%)">Coucher</span><span style="right:0">Nuit</span></div></div>
 <div id="hint">Glissez pour tourner · choisissez un étage à gauche</div>
 <div id="tip"></div><div id="err"></div>
-<div id="credit">Démo · bâtiment d'après les plans et vidéos Sopimem · environnement © contributeurs OpenStreetMap · v28</div>
+<div id="credit">Démo · bâtiment d'après les plans et vidéos Sopimem · environnement © contributeurs OpenStreetMap + vues drone Sopimem · v29</div>
 <div id="load"><h2>NEWLINE</h2><p>Chargement de la résidence</p><div id="bar"><i></i></div><div id="pct">0 %</div></div>
 <button id="todPill" class="btn" aria-label="Heure">🕑 <span id="todPillT">10:00</span></button>
 
@@ -813,7 +813,7 @@ const HILLS = (() => {
     const A = i / N * 360, ar = A * DEG, dir = [Math.sin(ar), -Math.cos(ar)];
     const w = (lo, hi, e) => sm(A, lo - e, lo + e) * (1 - sm(A, hi - e, hi + e));
     const west = w(232, 322, 14), south = w(150, 238, 12), east = w(68, 152, 14);
-    const hgt = 1.35 * west * (300 + 120 * n1(ar)) * 12 / 14 + south * (1250 + 450 * n1(ar * 1.3 + 2)) * 12 / 38 + east * (210 + 90 * n1(ar * 0.8 + 5)) * 12 / 22;
+    const hgt = (1 - w(258, 335, 4)) * 1.35 * west *(300 + 120 * n1(ar)) * 12 / 14 + south * (1250 + 450 * n1(ar * 1.3 + 2)) * 12 / 38 + east * (210 + 90 * n1(ar * 0.8 + 5)) * 12 / 22;
     const hz = (west * 0.3 + south * 0.5 + east * 0.45) / Math.max(0.001, west + south + east);
     P.push(dir[0] * RR, -40, dir[1] * RR, dir[0] * RR, Math.max(0, hgt), dir[1] * RR); H.push(0.9, hz || 0.9);
     if (i < N) { const k = i * 2; I.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
@@ -838,7 +838,40 @@ const HILLS = (() => {
   add(new THREE.CylinderGeometry(33, 33, 10, 32), plain, 160, 46, 0);
   for (let k = -3; k <= 3; k++) add(new THREE.BoxGeometry(3, 14, 3), plain, 50, 7, k * 26);   // colonnade towards the esplanade
   scene.add(grp); glow.push([glass, new THREE.Color(0x000000), 0, new THREE.Color(0xfff2d0), 2.5]);
+  grp.visible = false;   // Phase 4 C4: the real minaret is in the drone skyline below (kept here, hidden, in case the photo band is removed)
 }
+/* Phase 4 C4: the real distant skyline of Algiers (Grande Mosquée, Mohammadia towers, the city, the Bouzaréah headland) cut from the
+   client's drone frame 0201, sky made transparent (make_horizon_strip.py). A curved band 11 km away, placed by bearing and elevation
+   (calibrated on the minaret and the headland, see horizon_ouest.json); the made-up hills behind it are flattened in that sector. */
+const bandMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide,
+  uniforms: { tex: { value: null }, uFog: { value: new THREE.Color() }, uNight: { value: 0 }, uLights: { value: 0 }, uWarm: { value: 0 } },
+  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform sampler2D tex; uniform vec3 uFog; uniform float uNight; uniform float uLights; uniform float uWarm; varying vec2 vUv;
+    float hh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    void main() { vec4 t = texture2D(tex, vUv); if (t.a < 0.01) discard;
+      vec3 c = mix(t.rgb * mix(vec3(1.0), uFog * 1.6, 0.6 * uWarm), uFog, 0.22 + 0.4 * uWarm);   // same haze (and sunset tint) as the far ground at this hour
+      c *= mix(1.0, 0.05, uNight);
+      float water = step(t.r + 0.06, t.b) * step(t.g, t.b + 0.02);
+      vec2 cell = floor(vUv * vec2(1980.0, 240.0) / 2.0);
+      float lit = step(0.93, hh(cell)) * (1.0 - water) * uLights;          // city lights at night (land only)
+      c += vec3(1.0, 0.78, 0.45) * lit * (0.35 + 0.65 * hh(cell + 7.0));
+      gl_FragColor = vec4(c, t.a);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }` });
+fetch('residence/horizon_ouest.json').then(r => r.json()).then(B => {
+  const t = new THREE.TextureLoader().load('residence/horizon_ouest.png', () => invalidate(true)); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  bandMat.uniforms.tex.value = t;
+  const N = 48, RB = 11000, HC = 120, P = [], U = [], I = [];
+  for (let i = 0; i <= N; i++) {
+    const A = (B.bearing_left + (B.bearing_right - B.bearing_left) * i / N) * DEG, dx = Math.sin(A), dz = -Math.cos(A);
+    P.push(RC.x + dx * RB, HC + RB * Math.tan(B.elev_bottom * DEG), RC.z + dz * RB, RC.x + dx * RB, HC + RB * Math.tan(B.elev_top * DEG), RC.z + dz * RB);
+    U.push(i / N, 0, i / N, 1);
+    if (i < N) { const k = i * 2; I.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); g.setIndex(I);
+  const m = new THREE.Mesh(g, bandMat); m.frustumCulled = false; m.renderOrder = -4; scene.add(m); window.__band = m; invalidate(true);
+}).catch(() => {});
 const ENV = {};
 function initTime() {
   loadSky('jour').then(d => {                      // only the day sky at start; evening and night skies load when the slider gets there
@@ -860,7 +893,7 @@ function applyTime() {
   if (skyReady) { const env = kN > 0.5 ? ENV.night : wEve > 0.5 ? ENV.eve : ENV.day; if (env !== envNow) { scene.environment = env; envNow = env; } }
   scene.environmentIntensity = mixf(mixf(0.55, 0.8, wEve), 0.5, kN);
   { const k = Math.PI / BAKE_SKY * 0.56 * mixf(mixf(1, 0.8, w), 0.04, n); for (const m of BAKED) m.lightMapIntensity = k; }
-  keyCol(fogKeys, h, scene.fog.color); hillMat.uniforms.uFog.value.copy(scene.fog.color); hillMat.uniforms.uNight.value = n; domeMat.uniforms.uHaze.value.copy(scene.fog.color); hemi.intensity = mixf(0.12, 0.1, n);
+  keyCol(fogKeys, h, scene.fog.color); hillMat.uniforms.uFog.value.copy(scene.fog.color); hillMat.uniforms.uNight.value = n; bandMat.uniforms.uFog.value.copy(scene.fog.color); bandMat.uniforms.uNight.value = n; bandMat.uniforms.uLights.value = g; bandMat.uniforms.uWarm.value = wEve * (1 - kN); domeMat.uniforms.uHaze.value.copy(scene.fog.color); hemi.intensity = mixf(0.12, 0.1, n);
   renderer.toneMappingExposure = mixf(mixf(0.72, 0.86, w * dayK), 1.3, kN);
   if (Math.abs(g - glowK) > 0.002) { glowK = g;
     for (const m of cityMats) { m.emissive.set(0xffffff); m.emissiveIntensity = 1.6 * g; }
